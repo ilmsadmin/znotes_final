@@ -1,171 +1,98 @@
-# Backend - NoteFlow API
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-Backend service cho ứng dụng NoteFlow, cung cấp RESTful API và GraphQL endpoint.
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## Công nghệ sử dụng
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js
-- **API**: GraphQL (Apollo Server)
-- **Database**: PostgreSQL 15+
-- **Authentication**: Firebase Auth
-- **Cache**: Redis
-- **Task Queue**: Bull Queue
+## Description
 
-## Cấu trúc thư mục
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-```
-backend/
-├── src/
-│   ├── controllers/     # API controllers
-│   ├── models/         # Database models
-│   ├── services/       # Business logic
-│   ├── middleware/     # Express middleware
-│   ├── graphql/        # GraphQL schema & resolvers
-│   ├── utils/          # Utility functions
-│   └── config/         # Configuration files
-├── tests/              # Test files
-├── docs/               # API documentation
-├── migrations/         # Database migrations
-├── seeds/              # Database seed data
-└── scripts/            # Build & deployment scripts
-```
+## Project setup
 
-## Cài đặt môi trường phát triển
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 15+
-- Redis 6+
-- npm hoặc yarn
-
-### Cài đặt dependencies
 ```bash
-npm install
+$ npm install
 ```
 
-### Cấu hình môi trường
+## Compile and run the project
+
 ```bash
-cp .env.example .env
-# Chỉnh sửa .env với thông tin cơ sở dữ liệu và API keys
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
 ```
 
-### Chạy migrations
+## Run tests
+
 ```bash
-npm run migrate
-```
+# unit tests
+$ npm run test
 
-### Seed dữ liệu test
-```bash
-npm run seed
-```
+# e2e tests
+$ npm run test:e2e
 
-### Khởi chạy development server
-```bash
-npm run dev
-```
-
-## API Endpoints
-
-### GraphQL
-- **Endpoint**: `/graphql`
-- **Playground**: `/graphql` (development only)
-
-### REST API
-- **Health check**: `GET /health`
-- **Authentication**: `POST /auth/*`
-- **File upload**: `POST /upload`
-
-## Testing
-
-### Unit tests
-```bash
-npm run test:unit
-```
-
-### Integration tests
-```bash
-npm run test:integration
-```
-
-### Coverage report
-```bash
-npm run test:coverage
+# test coverage
+$ npm run test:cov
 ```
 
 ## Deployment
 
-### Build production
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
 ```bash
-npm run build
+$ npm install -g @nestjs/mau
+$ mau deploy
 ```
 
-### Start production server
-```bash
-npm start
-```
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
-### Docker
-```bash
-docker build -t noteflow-backend .
-docker run -p 4000:4000 noteflow-backend
-```
+## Resources
 
-## Documentation
+Check out a few resources that may come in handy when working with NestJS:
 
-- [API Documentation](../docs/api-documentation.md)
-- [Database Schema](../docs/database-schema.md)
-- [Technical Architecture](../docs/technical-architecture.md)
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
 
-## Môi trường
+## Support
 
-### Development
-- Database: PostgreSQL (local)
-- Cache: Redis (local)
-- File storage: Local filesystem
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-### Staging
-- Database: PostgreSQL (cloud)
-- Cache: Redis (cloud)
-- File storage: Firebase Storage
+## Stay in touch
 
-### Production
-- Database: PostgreSQL (cloud, multi-AZ)
-- Cache: Redis Cluster
-- File storage: Firebase Storage + CDN
-
-## Monitoring
-
-- Health checks: `/health`
-- Metrics: Prometheus endpoint `/metrics`
-- Logs: Structured JSON logging
-- APM: Application Performance Monitoring
-
-## Security
-
-- JWT authentication
-- Rate limiting
-- Input validation
-- CORS configuration
-- Helmet.js security headers
-- SQL injection protection
-
-## Performance
-
-- Database connection pooling
-- Redis caching
-- GraphQL query optimization
-- Lazy loading
-- Pagination
-
-## Contributing
-
-1. Fork repository
-2. Tạo feature branch
-3. Commit changes
-4. Push to branch
-5. Tạo Pull Request
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
 
 ## License
 
-Proprietary - NoteFlow Team
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
