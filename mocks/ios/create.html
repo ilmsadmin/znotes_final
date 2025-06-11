@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteFlow iOS - Create Note</title>
+    <link rel="stylesheet" href="../shared/design-system.css">
+    <style>
+        .ios-container {
+            max-width: 428px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            position: relative;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .ios-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-secondary);
+            font-size: var(--text-sm);
+            font-weight: var(--font-semibold);
+        }
+
+        .ios-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-4);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color-light);
+        }
+
+        .ios-nav-button {
+            background: none;
+            border: none;
+            color: var(--primary-500);
+            font-size: var(--text-base);
+            font-weight: var(--font-normal);
+            cursor: pointer;
+            padding: var(--space-2);
+        }
+
+        .ios-nav-title {
+            font-size: var(--text-lg);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+        }
+
+        .ios-content {
+            padding: var(--space-4);
+            padding-bottom: var(--space-20);
+        }
+
+        .ios-type-selector {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-1);
+            margin-bottom: var(--space-6);
+        }
+
+        .ios-type-button {
+            flex: 1;
+            padding: var(--space-3);
+            border: none;
+            background: none;
+            border-radius: var(--radius-lg);
+            font-size: var(--text-sm);
+            font-weight: var(--font-medium);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ios-type-button.active {
+            background: var(--bg-secondary);
+            color: var(--primary-600);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ios-form-group {
+            margin-bottom: var(--space-6);
+        }
+
+        .ios-input {
+            width: 100%;
+            padding: var(--space-4);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            font-size: var(--text-base);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .ios-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px var(--primary-100);
+        }
+
+        .ios-input.title {
+            font-size: var(--text-xl);
+            font-weight: var(--font-semibold);
+            border: none;
+            padding: var(--space-3) 0;
+            background: transparent;
+        }
+
+        .ios-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: var(--space-4);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            font-size: var(--text-base);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .ios-textarea:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px var(--primary-100);
+        }
+
+        .ios-formatting-bar {
+            display: flex;
+            gap: var(--space-2);
+            padding: var(--space-3);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-4);
+        }
+
+        .ios-format-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-lg);
+            border: none;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ios-format-btn:hover,
+        .ios-format-btn.active {
+            background: var(--primary-100);
+            color: var(--primary-600);
+        }
+
+        .ios-tag-section {
+            margin-bottom: var(--space-6);
+        }
+
+        .ios-section-title {
+            font-size: var(--text-sm);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+
+        .ios-tag-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            padding: var(--space-3);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            background: var(--bg-secondary);
+            margin-bottom: var(--space-3);
+        }
+
+        .ios-tag {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-1) var(--space-3);
+            background: var(--primary-100);
+            color: var(--primary-700);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+        }
+
+        .ios-tag-remove {
+            background: none;
+            border: none;
+            color: var(--primary-600);
+            cursor: pointer;
+            font-size: var(--text-xs);
+        }
+
+        .ios-new-tag-input {
+            border: none;
+            background: none;
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .ios-new-tag-input:focus {
+            outline: none;
+        }
+
+        .ios-task-fields {
+            display: none;
+        }
+
+        .ios-task-fields.active {
+            display: block;
+        }
+
+        .ios-priority-selector {
+            display: flex;
+            gap: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+
+        .ios-priority-btn {
+            flex: 1;
+            padding: var(--space-3);
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        .ios-priority-btn.active {
+            border-color: var(--primary-500);
+            background: var(--primary-100);
+            color: var(--primary-700);
+        }
+
+        .ios-date-input {
+            width: 100%;
+            padding: var(--space-4);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            font-size: var(--text-base);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .ios-attachment-section {
+            margin-bottom: var(--space-6);
+        }
+
+        .ios-attachment-button {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            width: 100%;
+            padding: var(--space-4);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-xl);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ios-attachment-button:hover {
+            border-color: var(--primary-300);
+            background: var(--primary-50);
+            color: var(--primary-600);
+        }
+
+        .ios-bottom-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 428px;
+            max-width: 100%;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color-light);
+            padding: var(--space-4);
+            display: flex;
+            gap: var(--space-3);
+        }
+
+        .ios-button {
+            flex: 1;
+            padding: var(--space-4);
+            border-radius: var(--radius-xl);
+            font-size: var(--text-base);
+            font-weight: var(--font-semibold);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ios-button-primary {
+            background: var(--primary-500);
+            color: white;
+        }
+
+        .ios-button-primary:hover {
+            background: var(--primary-600);
+        }
+
+        .ios-button-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .ios-suggested-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+        }
+
+        .ios-suggested-tag {
+            padding: var(--space-1) var(--space-3);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ios-suggested-tag:hover {
+            background: var(--primary-100);
+            color: var(--primary-600);
+        }
+    </style>
+</head>
+<body>
+    <div class="ios-container">
+        <div class="ios-status-bar">
+            <span>9:41</span>
+            <span>📶 📶 🔋</span>
+        </div>
+
+        <div class="ios-navigation">
+            <button class="ios-nav-button" onclick="alert('Cancel and go back')">Cancel</button>
+            <h1 class="ios-nav-title">New Item</h1>
+            <button class="ios-nav-button" onclick="alert('Save item')">Done</button>
+        </div>
+
+        <div class="ios-content">
+            <!-- Type Selector -->
+            <div class="ios-type-selector">
+                <button class="ios-type-button active" onclick="switchType('note')">📝 Note</button>
+                <button class="ios-type-button" onclick="switchType('task')">✅ Task</button>
+                <button class="ios-type-button" onclick="switchType('issue')">🐛 Issue</button>
+            </div>
+
+            <!-- Title Input -->
+            <div class="ios-form-group">
+                <input type="text" class="ios-input title" placeholder="Title" value="Weekly Planning Meeting">
+            </div>
+
+            <!-- Formatting Bar -->
+            <div class="ios-formatting-bar">
+                <button class="ios-format-btn" title="Bold"><strong>B</strong></button>
+                <button class="ios-format-btn" title="Italic"><em>I</em></button>
+                <button class="ios-format-btn" title="Link">🔗</button>
+                <button class="ios-format-btn" title="List">📝</button>
+                <button class="ios-format-btn" title="Heading">H</button>
+                <button class="ios-format-btn" title="Quote">💬</button>
+            </div>
+
+            <!-- Content Input -->
+            <div class="ios-form-group">
+                <textarea class="ios-textarea" placeholder="Write your content here...">Agenda for this week's planning meeting:
+
+1. Review last sprint outcomes
+2. Discuss Q4 roadmap priorities
+3. Resource allocation for new features
+4. Timeline review and adjustments
+
+Key topics to cover:
+- Mobile app development progress
+- API authentication implementation 
+- Design system finalization
+- User testing feedback integration
+
+Action items from last meeting:
+- Complete UI mockups (Due: Friday)
+- Setup CI/CD pipeline (In Progress)
+- Finalize database schema (Completed)</textarea>
+            </div>
+
+            <!-- Task-specific fields (hidden by default) -->
+            <div class="ios-task-fields" id="task-fields">
+                <div class="ios-form-group">
+                    <div class="ios-section-title">Priority</div>
+                    <div class="ios-priority-selector">
+                        <button class="ios-priority-btn">
+                            <span class="priority-indicator low"></span>
+                            Low
+                        </button>
+                        <button class="ios-priority-btn active">
+                            <span class="priority-indicator medium"></span>
+                            Medium
+                        </button>
+                        <button class="ios-priority-btn">
+                            <span class="priority-indicator high"></span>
+                            High
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ios-form-group">
+                    <div class="ios-section-title">Due Date</div>
+                    <input type="date" class="ios-date-input" value="2024-01-15">
+                </div>
+
+                <div class="ios-form-group">
+                    <div class="ios-section-title">Estimated Time (hours)</div>
+                    <input type="number" class="ios-input" placeholder="e.g., 4" value="2">
+                </div>
+            </div>
+
+            <!-- Tags Section -->
+            <div class="ios-tag-section">
+                <div class="ios-section-title">Tags</div>
+                <div class="ios-tag-input">
+                    <div class="ios-tag">
+                        <span>meeting</span>
+                        <button class="ios-tag-remove">×</button>
+                    </div>
+                    <div class="ios-tag">
+                        <span>planning</span>
+                        <button class="ios-tag-remove">×</button>
+                    </div>
+                    <input type="text" class="ios-new-tag-input" placeholder="Add tag..." onkeypress="handleTagInput(event)">
+                </div>
+                <div class="ios-suggested-tags">
+                    <span class="ios-suggested-tag" onclick="addTag('weekly')">weekly</span>
+                    <span class="ios-suggested-tag" onclick="addTag('sprint')">sprint</span>
+                    <span class="ios-suggested-tag" onclick="addTag('roadmap')">roadmap</span>
+                    <span class="ios-suggested-tag" onclick="addTag('team')">team</span>
+                </div>
+            </div>
+
+            <!-- Attachments Section -->
+            <div class="ios-attachment-section">
+                <div class="ios-section-title">Attachments</div>
+                <button class="ios-attachment-button">
+                    <span style="font-size: var(--text-2xl);">📎</span>
+                    <div>
+                        <div style="font-weight: var(--font-medium);">Add files or images</div>
+                        <div style="font-size: var(--text-sm);">Tap to browse or drag and drop</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div class="ios-bottom-toolbar">
+            <button class="ios-button ios-button-secondary">Save Draft</button>
+            <button class="ios-button ios-button-primary">Publish</button>
+        </div>
+    </div>
+
+    <script>
+        function switchType(type) {
+            // Update type buttons
+            document.querySelectorAll('.ios-type-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Show/hide task-specific fields
+            const taskFields = document.getElementById('task-fields');
+            if (type === 'task' || type === 'issue') {
+                taskFields.classList.add('active');
+            } else {
+                taskFields.classList.remove('active');
+            }
+
+            // Update placeholder text based on type
+            const textarea = document.querySelector('.ios-textarea');
+            const titleInput = document.querySelector('.ios-input.title');
+            
+            if (type === 'note') {
+                titleInput.placeholder = 'Note title';
+                textarea.placeholder = 'Write your note here...';
+            } else if (type === 'task') {
+                titleInput.placeholder = 'Task title';
+                textarea.placeholder = 'Describe the task...';
+            } else if (type === 'issue') {
+                titleInput.placeholder = 'Issue title';
+                textarea.placeholder = 'Describe the issue...';
+            }
+        }
+
+        function handleTagInput(event) {
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                const input = event.target;
+                const value = input.value.trim();
+                if (value) {
+                    addTag(value);
+                    input.value = '';
+                }
+            }
+        }
+
+        function addTag(tagText) {
+            const tagInput = document.querySelector('.ios-tag-input');
+            const newTagInput = document.querySelector('.ios-new-tag-input');
+            
+            // Create new tag element
+            const tagElement = document.createElement('div');
+            tagElement.className = 'ios-tag';
+            tagElement.innerHTML = `
+                <span>${tagText}</span>
+                <button class="ios-tag-remove" onclick="removeTag(this)">×</button>
+            `;
+            
+            // Insert before the input
+            tagInput.insertBefore(tagElement, newTagInput);
+        }
+
+        function removeTag(button) {
+            button.parentElement.remove();
+        }
+
+        // Priority selector functionality
+        document.querySelectorAll('.ios-priority-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.ios-priority-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Format button functionality
+        document.querySelectorAll('.ios-format-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('active');
+                // Here you would implement actual text formatting
+            });
+        });
+    </script>
+</body>
+</html>

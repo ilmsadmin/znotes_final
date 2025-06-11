@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteFlow - UI/UX Mockups</title>
+    <link rel="stylesheet" href="shared/design-system.css">
+    <style>
+        .mockup-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-8);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--space-12);
+        }
+
+        .title {
+            font-size: var(--text-4xl);
+            font-weight: var(--font-bold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+        }
+
+        .subtitle {
+            font-size: var(--text-xl);
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .platform-section {
+            margin-bottom: var(--space-12);
+        }
+
+        .platform-title {
+            font-size: var(--text-2xl);
+            font-weight: var(--font-bold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-6);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .platform-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-2xl);
+            color: white;
+        }
+
+        .ios-icon {
+            background: linear-gradient(135deg, #007AFF, #0051D5);
+        }
+
+        .android-icon {
+            background: linear-gradient(135deg, #3DDC84, #1DB954);
+        }
+
+        .web-icon {
+            background: linear-gradient(135deg, #FF6B35, #F7931E);
+        }
+
+        .mockup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: var(--space-6);
+        }
+
+        .mockup-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .mockup-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .mockup-card-title {
+            font-size: var(--text-lg);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+
+        .mockup-card-description {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: var(--space-4);
+        }
+
+        .mockup-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: var(--text-sm);
+            color: var(--text-tertiary);
+        }
+
+        .status-badge {
+            padding: var(--space-1) var(--space-3);
+            background: var(--success-100);
+            color: var(--success-700);
+            border-radius: var(--radius-full);
+            font-size: var(--text-xs);
+            font-weight: var(--font-medium);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-6);
+            margin: var(--space-12) 0;
+        }
+
+        .feature-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--primary-100);
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto var(--space-4);
+            font-size: var(--text-2xl);
+        }
+
+        .feature-title {
+            font-size: var(--text-lg);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+
+        .feature-description {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .design-principles {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-8);
+            margin: var(--space-12) 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .principles-title {
+            font-size: var(--text-2xl);
+            font-weight: var(--font-bold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-6);
+            text-align: center;
+        }
+
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-6);
+        }
+
+        .principle-item {
+            text-align: center;
+        }
+
+        .principle-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-500);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto var(--space-3);
+            color: white;
+            font-size: var(--text-xl);
+        }
+
+        .principle-title {
+            font-size: var(--text-base);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .principle-description {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .mockup-container {
+                padding: var(--space-4);
+            }
+            
+            .mockup-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-container">
+        <header class="header">
+            <h1 class="title">NoteFlow UI/UX Mockups</h1>
+            <p class="subtitle">
+                Comprehensive interface designs for iOS, Android, and Web platforms.<br>
+                Demonstrating unified user experience across all touchpoints.
+            </p>
+        </header>
+
+        <section class="design-principles">
+            <h2 class="principles-title">Design Principles</h2>
+            <div class="principles-grid">
+                <div class="principle-item">
+                    <div class="principle-icon">🎯</div>
+                    <h3 class="principle-title">Simple but Powerful</h3>
+                    <p class="principle-description">Clean interfaces that don't sacrifice functionality</p>
+                </div>
+                <div class="principle-item">
+                    <div class="principle-icon">🔄</div>
+                    <h3 class="principle-title">Unified Experience</h3>
+                    <p class="principle-description">Consistent patterns across all platforms</p>
+                </div>
+                <div class="principle-item">
+                    <div class="principle-icon">♿</div>
+                    <h3 class="principle-title">Accessible Design</h3>
+                    <p class="principle-description">WCAG compliant with screen reader support</p>
+                </div>
+                <div class="principle-item">
+                    <div class="principle-icon">🌙</div>
+                    <h3 class="principle-title">Dark Mode Ready</h3>
+                    <p class="principle-description">Full dark mode support for all interfaces</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3 class="feature-title">Native Mobile Experience</h3>
+                <p class="feature-description">Platform-specific patterns following iOS HIG and Material Design guidelines</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💻</div>
+                <h3 class="feature-title">Desktop Productivity</h3>
+                <p class="feature-description">Optimized for keyboard navigation and efficient workflows</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3 class="feature-title">Cohesive Design System</h3>
+                <p class="feature-description">Unified color palette, typography, and component library</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📋</div>
+                <h3 class="feature-title">Multiple View Modes</h3>
+                <p class="feature-description">List, grid, and kanban views for different user preferences</p>
+            </div>
+        </section>
+
+        <!-- iOS Platform -->
+        <section class="platform-section">
+            <h2 class="platform-title">
+                <div class="platform-icon ios-icon">🍎</div>
+                iOS Application
+            </h2>
+            <div class="mockup-grid">
+                <a href="ios/onboarding.html" class="mockup-card">
+                    <h3 class="mockup-card-title">Onboarding Flow</h3>
+                    <p class="mockup-card-description">
+                        Complete registration and setup experience including welcome screens, 
+                        account creation, team joining, and interactive tutorial.
+                    </p>
+                    <div class="mockup-card-meta">
+                        <span>6 screens</span>
+                        <span class="status-badge">Complete</span>
+                    </div>
+                </a>
+                
+                <a href="ios/home.html" class="mockup-card">
+                    <h3 class="mockup-card-title">Home Dashboard</h3>
+                    <p class="mockup-card-description">
+                        Main interface with Notes, Tasks, and Issues tabs. Multiple view modes 
+                        including list, grid, and kanban boards.
+                    </p>
+                    <div class="mockup-card-meta">
+                        <span>3 tabs + views</span>
+                        <span class="status-badge">Complete</span>
+                    </div>
+                </a>
+                
+                <a href="ios/create.html" class="mockup-card">
+                    <h3 class="mockup-card-title">Create & Edit</h3>
+                    <p class="mockup-card-description">
+                        Rich content creation interface with formatting tools, tags, 
+                        attachments, and task-specific fields.
+                    </p>
+                    <div class="mockup-card-meta">
+                        <span>Multi-type form</span>
+                        <span class="status-badge">Complete</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Android Platform -->
+        <section class="platform-section">
+            <h2 class="platform-title">
+                <div class="platform-icon android-icon">🤖</div>
+                Android Application
+            </h2>
+            <div class="mockup-grid">
+                <a href="android/onboarding.html" class="mockup-card">
+                    <h3 class="mockup-card-title">Material Onboarding</h3>
+                    <p class="mockup-card-description">
+                        Material Design 3 onboarding flow with floating labels, 
+                        feature cards, and smooth transitions.
+                    </p>
+                    <div class="mockup-card-meta">
+                        <span>6 screens</span>
+                        <span class="status-badge">Complete</span>
+                    </div>
+                </a>
+                
+                <a href="android/home.html" class="mockup-card">
+                    <h3 class="mockup-card-title">Material Dashboard</h3>
+                    <p class="mockup-card-description">
+                        Material Design home interface with FAB, Material cards, 
+                        and responsive view toggles.
+                    </p>
+                    <div class="mockup-card-meta">
+                        <span>3 tabs + views</span>
+                        <span class="status-badge">Complete</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Web Platform -->
+        <section class="platform-section">
+            <h2 class="platform-title">
+                <div class="platform-icon web-icon">🌐</div>
+                Web Application
+            </h2>
+            <div class="mockup-grid">
+                <a href="web/dashboard.html" class="mockup-card">
+                    <h3 class="mockup-card-title">Desktop Dashboard</h3>
+                    <p class="mockup-card-description">
+                        Full-featured web interface with sidebar navigation, 
+                        responsive grid layouts, and productivity-focused design.
+                    </p>
+                    <div class="mockup-card-meta">
+                        <span>Responsive design</span>
+                        <span class="status-badge">Complete</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
