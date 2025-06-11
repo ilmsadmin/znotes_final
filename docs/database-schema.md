@@ -1,0 +1,556 @@
+# Database Schema - NoteFlow
+
+## Tổng quan
+
+NoteFlow sử dụng PostgreSQL cho server database và SQLite cho local storage trên mobile devices. Thiết kế database được tối ưu cho performance và hỗ trợ offline synchronization.
+
+## Server Database (PostgreSQL)
+
+### Schema Overview
+
+```sql
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Set timezone
+SET timezone = 'UTC';
+```
+
+### Tables
+
+#### users
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    group_id UUID NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'member')),
+    avatar_url TEXT,
+    firebase_uid VARCHAR(255) UNIQUE NOT NULL,
+    last_active TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_users_email ON users (email);
+CREATE INDEX idx_users_domain ON users (domain);
+CREATE INDEX idx_users_group_id ON users (group_id);
+CREATE INDEX idx_users_firebase_uid ON users (firebase_uid);
+```
+
+#### groups
+```sql
+CREATE TABLE groups (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    domain VARCHAR(255) UNIQUE NOT NULL,
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_groups_domain ON groups (domain);
+```
+
+#### notes
+```sql
+CREATE TABLE notes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    parent_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+    title VARCHAR(500) NOT NULL,
+    content TEXT,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('note', 'task', 'issue')),
+    status VARCHAR(50) NOT NULL DEFAULT 'open',
+    priority VARCHAR(20) CHECK (priority IN ('low', 'medium', 'high')),
+    severity VARCHAR(20) CHECK (severity IN ('low', 'medium', 'critical')),
+    deadline TIMESTAMP WITH TIME ZONE,
+    estimated_time INTEGER, -- in hours
+    tags TEXT[] DEFAULT '{}',
+    is_pinned BOOLEAN DEFAULT FALSE,
+    version INTEGER DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_notes_group_id ON notes (group_id);
+CREATE INDEX idx_notes_creator_id ON notes (creator_id);
+CREATE INDEX idx_notes_parent_id ON notes (parent_id);
+CREATE INDEX idx_notes_type ON notes (type);
+CREATE INDEX idx_notes_status ON notes (status);
+CREATE INDEX idx_notes_deadline ON notes (deadline);
+CREATE INDEX idx_notes_created_at ON notes (created_at DESC);
+CREATE INDEX idx_notes_updated_at ON notes (updated_at DESC);
+CREATE INDEX idx_notes_tags ON notes USING GIN (tags);
+
+-- Full-text search index
+CREATE INDEX idx_notes_search ON notes USING GIN (
+    to_tsvector('english', title || ' ' || COALESCE(content, ''))
+);
+```
+
+#### assignments
+```sql
+CREATE TABLE assignments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    assignee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    UNIQUE(note_id, assignee_id)
+);
+
+-- Indexes
+CREATE INDEX idx_assignments_note_id ON assignments (note_id);
+CREATE INDEX idx_assignments_assignee_id ON assignments (assignee_id);
+```
+
+#### comments
+```sql
+CREATE TABLE comments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    parent_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    mentions UUID[] DEFAULT '{}', -- User IDs mentioned in comment
+    version INTEGER DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_comments_note_id ON comments (note_id);
+CREATE INDEX idx_comments_user_id ON comments (user_id);
+CREATE INDEX idx_comments_parent_id ON comments (parent_comment_id);
+CREATE INDEX idx_comments_created_at ON comments (created_at DESC);
+```
+
+#### files
+```sql
+CREATE TABLE files (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    file_url TEXT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_type VARCHAR(100) NOT NULL,
+    file_size BIGINT NOT NULL,
+    uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_files_note_id ON files (note_id);
+CREATE INDEX idx_files_uploaded_by ON files (uploaded_by);
+```
+
+#### notifications
+```sql
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL CHECK (type IN ('comment', 'assign', 'deadline', 'mention')),
+    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    data JSONB DEFAULT '{}', -- Additional notification data
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_notifications_user_id ON notifications (user_id);
+CREATE INDEX idx_notifications_read ON notifications (read);
+CREATE INDEX idx_notifications_created_at ON notifications (created_at DESC);
+CREATE INDEX idx_notifications_user_unread ON notifications (user_id, read, created_at DESC);
+```
+
+#### sync_log
+```sql
+CREATE TABLE sync_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    table_name VARCHAR(50) NOT NULL,
+    record_id UUID NOT NULL,
+    action VARCHAR(20) NOT NULL CHECK (action IN ('create', 'update', 'delete')),
+    old_data JSONB,
+    new_data JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_sync_log_user_id ON sync_log (user_id);
+CREATE INDEX idx_sync_log_record ON sync_log (table_name, record_id);
+CREATE INDEX idx_sync_log_created_at ON sync_log (created_at DESC);
+```
+
+### Triggers
+
+#### Auto-update timestamps
+```sql
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply to tables
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_groups_updated_at BEFORE UPDATE ON groups
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_notes_updated_at BEFORE UPDATE ON notes
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_comments_updated_at BEFORE UPDATE ON comments
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+```
+
+#### Auto-increment version
+```sql
+CREATE OR REPLACE FUNCTION increment_version()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.version = COALESCE(OLD.version, 0) + 1;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER increment_notes_version BEFORE UPDATE ON notes
+    FOR EACH ROW EXECUTE FUNCTION increment_version();
+
+CREATE TRIGGER increment_comments_version BEFORE UPDATE ON comments
+    FOR EACH ROW EXECUTE FUNCTION increment_version();
+```
+
+#### Sync logging
+```sql
+CREATE OR REPLACE FUNCTION log_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        INSERT INTO sync_log (user_id, table_name, record_id, action, old_data)
+        VALUES (OLD.creator_id, TG_TABLE_NAME, OLD.id, 'delete', to_jsonb(OLD));
+        RETURN OLD;
+    ELSIF TG_OP = 'UPDATE' THEN
+        INSERT INTO sync_log (user_id, table_name, record_id, action, old_data, new_data)
+        VALUES (NEW.creator_id, TG_TABLE_NAME, NEW.id, 'update', to_jsonb(OLD), to_jsonb(NEW));
+        RETURN NEW;
+    ELSIF TG_OP = 'INSERT' THEN
+        INSERT INTO sync_log (user_id, table_name, record_id, action, new_data)
+        VALUES (NEW.creator_id, TG_TABLE_NAME, NEW.id, 'create', to_jsonb(NEW));
+        RETURN NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER log_notes_changes AFTER INSERT OR UPDATE OR DELETE ON notes
+    FOR EACH ROW EXECUTE FUNCTION log_changes();
+
+CREATE TRIGGER log_comments_changes AFTER INSERT OR UPDATE OR DELETE ON comments
+    FOR EACH ROW EXECUTE FUNCTION log_changes();
+```
+
+### Views
+
+#### User assignments summary
+```sql
+CREATE VIEW user_assignments AS
+SELECT 
+    u.id AS user_id,
+    u.name,
+    u.email,
+    COUNT(a.id) AS total_assignments,
+    COUNT(CASE WHEN n.status = 'open' THEN 1 END) AS open_assignments,
+    COUNT(CASE WHEN n.status = 'in_progress' THEN 1 END) AS in_progress_assignments,
+    COUNT(CASE WHEN n.status = 'done' THEN 1 END) AS completed_assignments
+FROM users u
+LEFT JOIN assignments a ON u.id = a.assignee_id
+LEFT JOIN notes n ON a.note_id = n.id
+GROUP BY u.id, u.name, u.email;
+```
+
+#### Group activity summary
+```sql
+CREATE VIEW group_activity AS
+SELECT 
+    g.id AS group_id,
+    g.name AS group_name,
+    COUNT(DISTINCT u.id) AS member_count,
+    COUNT(DISTINCT n.id) AS total_notes,
+    COUNT(DISTINCT CASE WHEN n.type = 'task' THEN n.id END) AS total_tasks,
+    COUNT(DISTINCT CASE WHEN n.type = 'issue' THEN n.id END) AS total_issues,
+    COUNT(DISTINCT c.id) AS total_comments,
+    MAX(n.created_at) AS last_activity
+FROM groups g
+LEFT JOIN users u ON g.id = u.group_id
+LEFT JOIN notes n ON g.id = n.group_id
+LEFT JOIN comments c ON n.id = c.note_id
+GROUP BY g.id, g.name;
+```
+
+## Local Database (SQLite)
+
+### Schema for Mobile Apps
+
+```sql
+-- Users (cached)
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    domain TEXT NOT NULL,
+    group_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    avatar_url TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- Groups (cached)
+CREATE TABLE groups (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    domain TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- Notes (full data)
+CREATE TABLE notes (
+    id TEXT PRIMARY KEY,
+    group_id TEXT NOT NULL,
+    creator_id TEXT NOT NULL,
+    parent_id TEXT,
+    title TEXT NOT NULL,
+    content TEXT,
+    type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    priority TEXT,
+    severity TEXT,
+    deadline INTEGER,
+    estimated_time INTEGER,
+    tags TEXT, -- JSON array as string
+    is_pinned INTEGER DEFAULT 0,
+    version INTEGER DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    local_only INTEGER DEFAULT 0, -- 1 if not synced to server
+    conflict_data TEXT -- JSON data for conflict resolution
+);
+
+-- Assignments
+CREATE TABLE assignments (
+    id TEXT PRIMARY KEY,
+    note_id TEXT NOT NULL,
+    assignee_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY(note_id) REFERENCES notes(id) ON DELETE CASCADE
+);
+
+-- Comments
+CREATE TABLE comments (
+    id TEXT PRIMARY KEY,
+    note_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    parent_comment_id TEXT,
+    content TEXT NOT NULL,
+    version INTEGER DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    local_only INTEGER DEFAULT 0,
+    FOREIGN KEY(note_id) REFERENCES notes(id) ON DELETE CASCADE
+);
+
+-- Files (metadata only, files stored in app sandbox)
+CREATE TABLE files (
+    id TEXT PRIMARY KEY,
+    note_id TEXT NOT NULL,
+    file_url TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_type TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    uploaded_by TEXT NOT NULL,
+    local_path TEXT, -- Local file path if cached
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY(note_id) REFERENCES notes(id) ON DELETE CASCADE
+);
+
+-- Sync queue for offline operations
+CREATE TABLE sync_queue (
+    id TEXT PRIMARY KEY,
+    action TEXT NOT NULL, -- 'create', 'update', 'delete'
+    table_name TEXT NOT NULL,
+    record_id TEXT NOT NULL,
+    data TEXT NOT NULL, -- JSON payload
+    created_at INTEGER NOT NULL,
+    retry_count INTEGER DEFAULT 0,
+    last_retry INTEGER,
+    error_message TEXT
+);
+
+-- Local metadata
+CREATE TABLE sync_metadata (
+    table_name TEXT NOT NULL,
+    record_id TEXT NOT NULL,
+    server_version INTEGER NOT NULL,
+    local_version INTEGER NOT NULL,
+    last_synced INTEGER NOT NULL,
+    PRIMARY KEY (table_name, record_id)
+);
+
+-- App settings
+CREATE TABLE app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+```
+
+### SQLite Indexes
+```sql
+-- Performance indexes
+CREATE INDEX idx_notes_group_id ON notes (group_id);
+CREATE INDEX idx_notes_type ON notes (type);
+CREATE INDEX idx_notes_status ON notes (status);
+CREATE INDEX idx_notes_created_at ON notes (created_at DESC);
+CREATE INDEX idx_notes_updated_at ON notes (updated_at DESC);
+CREATE INDEX idx_notes_local_only ON notes (local_only);
+
+CREATE INDEX idx_comments_note_id ON comments (note_id);
+CREATE INDEX idx_comments_created_at ON comments (created_at DESC);
+
+CREATE INDEX idx_assignments_note_id ON assignments (note_id);
+CREATE INDEX idx_assignments_assignee_id ON assignments (assignee_id);
+
+CREATE INDEX idx_sync_queue_action ON sync_queue (action);
+CREATE INDEX idx_sync_queue_created_at ON sync_queue (created_at);
+
+-- Full-text search for notes
+CREATE VIRTUAL TABLE notes_fts USING fts5(
+    title,
+    content,
+    tags,
+    content='notes',
+    content_rowid='rowid'
+);
+
+-- Triggers to keep FTS in sync
+CREATE TRIGGER notes_ai AFTER INSERT ON notes BEGIN
+    INSERT INTO notes_fts(rowid, title, content, tags) 
+    VALUES (new.rowid, new.title, new.content, new.tags);
+END;
+
+CREATE TRIGGER notes_ad AFTER DELETE ON notes BEGIN
+    INSERT INTO notes_fts(notes_fts, rowid, title, content, tags) 
+    VALUES('delete', old.rowid, old.title, old.content, old.tags);
+END;
+
+CREATE TRIGGER notes_au AFTER UPDATE ON notes BEGIN
+    INSERT INTO notes_fts(notes_fts, rowid, title, content, tags) 
+    VALUES('delete', old.rowid, old.title, old.content, old.tags);
+    INSERT INTO notes_fts(rowid, title, content, tags) 
+    VALUES (new.rowid, new.title, new.content, new.tags);
+END;
+```
+
+## Data Migration Scripts
+
+### Initial Setup
+```sql
+-- Create admin user for first group
+INSERT INTO groups (id, name, domain) 
+VALUES ('00000000-0000-0000-0000-000000000001', 'Default', 'default.local');
+
+INSERT INTO users (id, name, email, domain, group_id, role, firebase_uid)
+VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'Admin User',
+    'admin@default.local',
+    'default.local',
+    '00000000-0000-0000-0000-000000000001',
+    'admin',
+    'admin-firebase-uid'
+);
+```
+
+### Sample Data
+```sql
+-- Sample notes
+INSERT INTO notes (id, group_id, creator_id, title, content, type, status) VALUES
+('note-1', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Welcome to NoteFlow', 'This is your first note!', 'note', 'open'),
+('task-1', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Setup project repository', 'Create GitHub repo and initial structure', 'task', 'in_progress'),
+('issue-1', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Login button not working', 'Users report login button is unresponsive on mobile', 'issue', 'open');
+```
+
+## Performance Optimization
+
+### Query Optimization
+```sql
+-- Efficient note listing with pagination
+SELECT n.*, u.name as creator_name, u.avatar_url as creator_avatar
+FROM notes n
+JOIN users u ON n.creator_id = u.id
+WHERE n.group_id = $1
+  AND ($2::text IS NULL OR n.type = $2)
+  AND ($3::text IS NULL OR n.status = $3)
+ORDER BY n.created_at DESC
+LIMIT $4 OFFSET $5;
+
+-- Search notes with full-text search
+SELECT n.*, ts_rank(
+    to_tsvector('english', n.title || ' ' || COALESCE(n.content, '')),
+    plainto_tsquery('english', $2)
+) as rank
+FROM notes n
+WHERE n.group_id = $1
+  AND to_tsvector('english', n.title || ' ' || COALESCE(n.content, '')) 
+      @@ plainto_tsquery('english', $2)
+ORDER BY rank DESC, n.created_at DESC
+LIMIT $3 OFFSET $4;
+```
+
+### Connection Pooling
+```javascript
+// PostgreSQL connection pool config
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  min: 5, // Minimum connections
+  max: 20, // Maximum connections
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+```
+
+## Backup & Recovery
+
+### Automated Backups
+```bash
+#!/bin/bash
+# Daily backup script
+DATE=$(date +%Y%m%d_%H%M%S)
+pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME > backup_$DATE.sql
+aws s3 cp backup_$DATE.sql s3://noteflow-backups/
+```
+
+### Point-in-time Recovery
+```sql
+-- Enable WAL archiving
+archive_mode = on
+archive_command = 'aws s3 cp %p s3://noteflow-wal-archive/%f'
+wal_level = replica
+```
