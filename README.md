@@ -28,6 +28,10 @@ Xem thư mục [docs/](./docs/) để biết thêm chi tiết về:
 - [API Documentation](./docs/api-documentation.md)
 - [Database Schema](./docs/database-schema.md)
 - [UI/UX Guidelines](./docs/ui-ux-guidelines.md)
+- [Development Roadmap](./docs/development-roadmap.md)
+- [Testing Strategy](./docs/testing-strategy.md)
+- [Security & Privacy](./docs/security-privacy.md)
+- [User Flows](./docs/user-flows.md)
 
 ## Lộ trình phát triển
 
