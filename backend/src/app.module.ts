@@ -8,6 +8,11 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { GroupsModule } from './groups/groups.module';
+import { NotesModule } from './notes/notes.module';
+import { CommentsModule } from './comments/comments.module';
 import { join } from 'path';
 
 @Module({
@@ -40,6 +45,11 @@ import { join } from 'path';
     
     // Feature modules
     HealthModule,
+    AuthModule,
+    UsersModule,
+    GroupsModule,
+    NotesModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
