@@ -9,7 +9,7 @@ import SwiftUI
 
 struct KanbanColumnView: View {
     let title: String
-    let tasks: [Task]
+    let tasks: [MockTask]
     let count: Int
     
     var body: some View {
@@ -27,14 +27,14 @@ struct KanbanColumnView: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color(.systemGray5))
+                    .background(Color.secondary.opacity(0.2))
                     .clipShape(Capsule())
             }
             
             // Tasks
             LazyVStack(spacing: 12) {
                 ForEach(tasks, id: \.id) { task in
-                    TaskCardView(task: task)
+                    KanbanTaskCardView(task: task)
                 }
             }
             
@@ -42,13 +42,13 @@ struct KanbanColumnView: View {
         }
         .frame(width: 280)
         .padding(16)
-        .background(Color(.systemGray6))
+        .background(Color.secondary.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
-struct TaskCardView: View {
-    let task: Task
+struct KanbanTaskCardView: View {
+    let task: MockTask
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -56,10 +56,10 @@ struct TaskCardView: View {
             HStack {
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(priorityColor(task.priority))
+                        .fill(task.priority.color)
                         .frame(width: 8, height: 8)
                     
-                    Text(task.priority.displayName)
+                    Text(task.priority.title)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                 }
@@ -130,39 +130,34 @@ struct TaskCardView: View {
             }
         }
         .padding(12)
-        .background(Color(.secondarySystemBackground))
+        .background(Color.secondary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(.separator), lineWidth: 0.5)
+                .stroke(Color.secondary.opacity(0.3), lineWidth: 0.5)
         )
-    }
-    
-    private func priorityColor(_ priority: Priority) -> Color {
-        switch priority {
-        case .low: return .green
-        case .medium: return .orange
-        case .high: return .red
-        }
     }
 }
 
 #Preview {
-    ScrollView(.horizontal) {
+    let todoTasks = MockData.shared.sampleTasks.filter { $0.status == .todo }
+    let inProgressTasks = MockData.shared.sampleTasks.filter { $0.status == .inProgress }
+    
+    return ScrollView(.horizontal) {
         HStack(spacing: 16) {
             KanbanColumnView(
                 title: "To Do",
-                tasks: Array(MockData.shared.sampleTasks.filter { $0.status == .todo }),
-                count: MockData.shared.sampleTasks.filter { $0.status == .todo }.count
+                tasks: Array(todoTasks),
+                count: todoTasks.count
             )
             
             KanbanColumnView(
-                title: "In Progress",
-                tasks: Array(MockData.shared.sampleTasks.filter { $0.status == .inProgress }),
-                count: MockData.shared.sampleTasks.filter { $0.status == .inProgress }.count
+                title: "In Progress", 
+                tasks: Array(inProgressTasks),
+                count: inProgressTasks.count
             )
         }
         .padding()
     }
-    .background(Color(.systemBackground))
+    .background(Color.secondary.opacity(0.02))
 }

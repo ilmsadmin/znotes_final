@@ -118,7 +118,7 @@ struct HomeView: View {
             NotificationCenterView()
         }
         .fullScreenCover(isPresented: $showingSearch) {
-            SearchView()
+            SearchView(query: $searchText)
         }
     }
     
@@ -286,7 +286,7 @@ struct HomeView: View {
                 switch selectedTab {
                 case .notes:
                     notesContent
-                case .tasks:  
+                case .tasks:
                     tasksContent
                 case .issues:
                     issuesContent
@@ -324,7 +324,7 @@ struct HomeView: View {
         }
     }
     
-    // MARK: - Tasks Content  
+    // MARK: - Tasks Content
     private var tasksContent: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: 16) {
@@ -337,7 +337,7 @@ struct HomeView: View {
                 
                 // In Progress Column
                 kanbanColumn(
-                    title: "In Progress", 
+                    title: "In Progress",
                     tasks: mockTasks.filter { $0.status == "inProgress" },
                     count: mockTasks.filter { $0.status == "inProgress" }.count
                 )

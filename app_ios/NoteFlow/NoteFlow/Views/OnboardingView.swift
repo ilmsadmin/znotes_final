@@ -8,9 +8,11 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @EnvironmentObject var coordinator: AppCoordinator
     @State private var currentPage = 0
     @State private var showingAuth = false
     @State private var isAnimating = false
+    @State private var showingGroupSetup = false
     
     private let pages = OnboardingPage.allPages
     
@@ -75,7 +77,7 @@ struct OnboardingView: View {
                         if currentPage == pages.count - 1 {
                             // Get Started Button
                             Button(action: {
-                                showingAuth = true
+                                coordinator.completeOnboarding()
                             }) {
                                 Text("Get Started")
                                     .font(.system(size: 18, weight: .semibold))
@@ -256,6 +258,7 @@ struct OnboardingPageView: View {
 // MARK: - Authentication View
 
 struct AuthenticationView: View {
+    @EnvironmentObject var coordinator: AppCoordinator
     @State private var showingSignUp = false
     @State private var email = ""
     @State private var password = ""
@@ -443,7 +446,7 @@ struct AuthenticationView: View {
         // TODO: Implement sign up logic
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             isLoading = false
-            // Navigate to main app
+            coordinator.completeAuthentication()
         }
     }
     
@@ -453,7 +456,7 @@ struct AuthenticationView: View {
         // TODO: Implement sign in logic
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             isLoading = false
-            // Navigate to main app
+            coordinator.completeAuthentication()
         }
     }
     

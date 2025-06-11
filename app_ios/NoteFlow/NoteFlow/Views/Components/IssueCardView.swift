@@ -112,10 +112,20 @@ struct IssueCardView: View {
 
 #Preview {
     VStack(spacing: 16) {
-        ForEach(MockData.shared.sampleIssues, id: \.id) { issue in
-            IssueCardView(issue: issue)
-        }
+        IssueCardView(issue: Note(
+            title: "Login page not responsive",
+            content: "The login form doesn't adapt properly to different screen sizes on mobile devices",
+            tags: ["bug", "mobile", "ui"],
+            type: .issue
+        ))
+        
+        IssueCardView(issue: Note(
+            title: "Search function slow", 
+            content: "Search queries taking longer than 3 seconds to return results",
+            tags: ["performance", "search"],
+            type: .issue
+        ))
     }
     .padding()
-    .background(Color(.systemBackground))
+    .background(Color.secondary.opacity(0.1))
 }

@@ -6,9 +6,10 @@
 //
 
 import SwiftUI
+import SwiftData
 
-struct NoteCardView: View {
-    let note: Note
+struct SimpleNoteCardView: View {
+    let note: MockNote
     var isCompact: Bool = false
     
     var body: some View {
@@ -38,7 +39,7 @@ struct NoteCardView: View {
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                             .frame(width: 32, height: 32)
-                            .background(Color(.systemGray6))
+                            .background(Color.secondary.opacity(0.1))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
@@ -82,7 +83,7 @@ struct NoteCardView: View {
                                 .font(.system(size: 14))
                                 .foregroundColor(.secondary)
                                 .frame(width: 32, height: 32)
-                                .background(Color(.systemGray6))
+                                .background(Color.secondary.opacity(0.1))
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         
@@ -91,7 +92,7 @@ struct NoteCardView: View {
                                 .font(.system(size: 14))
                                 .foregroundColor(.secondary)
                                 .frame(width: 32, height: 32)
-                                .background(Color(.systemGray6))
+                                .background(Color.secondary.opacity(0.1))
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                     }
@@ -99,20 +100,34 @@ struct NoteCardView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
+        .background(Color.secondary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color(.separator), lineWidth: 0.5)
+                .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5)
         )
     }
 }
 
 #Preview {
     VStack(spacing: 16) {
-        NoteCardView(note: MockData.shared.sampleNotes[0])
-        NoteCardView(note: MockData.shared.sampleNotes[1], isCompact: true)
+        // Create MockNote objects with correct parameters
+        SimpleNoteCardView(
+            note: MockNote(
+                title: "Meeting Notes",
+                content: "Discussed Q2 roadmap and upcoming features.",
+                tags: ["work", "meeting", "planning"]
+            )
+        )
+        SimpleNoteCardView(
+            note: MockNote(
+                title: "Shopping List", 
+                content: "Milk, eggs, bread, vegetables, fruits",
+                tags: ["personal", "shopping"]
+            ),
+            isCompact: true
+        )
     }
     .padding()
-    .background(Color(.systemBackground))
+    .background(Color.secondary.opacity(0.1))
 }

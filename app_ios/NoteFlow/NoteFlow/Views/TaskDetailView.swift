@@ -6,19 +6,26 @@
 //
 
 import SwiftUI
+import SwiftData
+
+// Type aliases to avoid conflicts with Foundation.Task
+typealias AppTask = Task
+typealias AppTaskStatus = TaskStatus
+typealias AppPriority = Priority
+typealias AppComment = Comment
 
 struct TaskDetailView: View {
-    let task: Task
+    let task: AppTask
     @Environment(\.dismiss) private var dismiss
     @State private var showingEditView = false
     @State private var showingDeleteAlert = false
     @State private var showingAssigneeSheet = false
-    @State private var currentStatus: TaskStatus
+    @State private var currentStatus: AppTaskStatus
     @State private var assignees: [TeamMember] = []
-    @State private var comments: [Comment] = []
+    @State private var comments: [MockComment] = []
     @State private var newComment = ""
     
-    init(task: Task) {
+    init(task: AppTask) {
         self.task = task
         self._currentStatus = State(initialValue: task.status)
     }
@@ -163,7 +170,7 @@ struct TaskDetailView: View {
             HStack(spacing: 12) {
                 // Status Selector
                 Menu {
-                    ForEach(TaskStatus.allCases, id: \.self) { status in
+                    ForEach(AppTaskStatus.allCases, id: \.self) { status in
                         Button(action: {
                             updateStatus(to: status)
                         }) {
@@ -432,7 +439,7 @@ struct TaskDetailView: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(comments, id: \.id) { comment in
-                        CommentRowView(comment: comment)
+                        MockCommentRowView(comment: comment)
                     }
                 }
             }
@@ -489,7 +496,7 @@ struct TaskDetailView: View {
     }
     
     // MARK: - Helper Functions
-    private func statusColor(_ status: TaskStatus) -> Color {
+    private func statusColor(_ status: AppTaskStatus) -> Color {
         switch status {
         case .todo: return .gray
         case .inProgress: return .orange
@@ -519,7 +526,7 @@ struct TaskDetailView: View {
         }
     }
     
-    private func updateStatus(to newStatus: TaskStatus) {
+    private func updateStatus(to newStatus: AppTaskStatus) {
         currentStatus = newStatus
         // TODO: Update status in data source
     }
@@ -537,10 +544,10 @@ struct TaskDetailView: View {
         ]
         
         comments = [
-            Comment(
+            MockComment(
                 noteId: task.id,
-                userId: UUID(),
-                content: "Started working on this task. Will update progress soon."
+                content: "Started working on this task. Will update progress soon.",
+                author: "Current User"
             )
         ]
     }
@@ -549,10 +556,10 @@ struct TaskDetailView: View {
         let trimmedComment = newComment.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedComment.isEmpty else { return }
         
-        let comment = Comment(
+        let comment = MockComment(
             noteId: task.id,
-            userId: UUID(),
-            content: trimmedComment
+            content: trimmedComment,
+            author: "Current User"
         )
         
         comments.append(comment)
@@ -857,6 +864,11 @@ struct TeamMember {
 
 #Preview {
     NavigationView {
-        TaskDetailView(task: MockData.shared.sampleTasks[0])
+        TaskDetailView(task: Task(
+            title: "Complete UI mockups",
+            content: "Finalize the user interface designs for the mobile application",
+            priority: .high,
+            status: .inProgress
+        ))
     }
 }

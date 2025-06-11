@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct NoteDetailView: View {
     let note: Note
@@ -13,7 +14,7 @@ struct NoteDetailView: View {
     @State private var showingEditView = false
     @State private var showingDeleteAlert = false
     @State private var newComment = ""
-    @State private var comments: [Comment] = []
+    @State private var comments: [MockComment] = []
     
     var body: some View {
         ScrollView {
@@ -38,7 +39,7 @@ struct NoteDetailView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 100)
         }
-        .background(Color(UIColor.systemBackground))
+        .background(Color.secondary.opacity(0.05))
         .navigationTitle(note.title)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -132,7 +133,7 @@ struct NoteDetailView: View {
                 .lineSpacing(4)
                 .multilineTextAlignment(.leading)
                 .padding(16)
-                .background(Color(UIColor.secondarySystemBackground))
+                .background(Color.secondary.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -187,7 +188,7 @@ struct NoteDetailView: View {
                 )
             }
             .padding(16)
-            .background(Color(UIColor.secondarySystemBackground))
+            .background(Color.secondary.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -226,7 +227,7 @@ struct NoteDetailView: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color(UIColor.systemGray5))
+                    .background(Color.secondary.opacity(0.2))
                     .clipShape(Capsule())
             }
             
@@ -246,12 +247,12 @@ struct NoteDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 32)
-                .background(Color(UIColor.secondarySystemBackground))
+                .background(Color.secondary.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(comments, id: \.id) { comment in
-                        CommentRowView(comment: comment)
+                        MockCommentRowView(comment: comment)
                     }
                 }
             }
@@ -302,10 +303,10 @@ struct NoteDetailView: View {
         let trimmedComment = newComment.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedComment.isEmpty else { return }
         
-        let comment = Comment(
+        let comment = MockComment(
             noteId: note.id,
-            userId: UUID(),
-            content: trimmedComment
+            content: trimmedComment,
+            author: "Current User" // Replace with actual user name when available
         )
         
         comments.append(comment)
@@ -443,8 +444,68 @@ extension DateFormatter {
     }()
 }
 
+// MARK: - MockCommentRowView
+
+struct MockCommentRowView: View {
+    let comment: MockComment
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // User avatar placeholder
+            Circle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 32, height: 32)
+                .overlay(
+                    Text(comment.author.prefix(1))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                )
+            
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(comment.author)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text(RelativeDateTimeFormatter().localizedString(for: comment.createdAt, relativeTo: Date()))
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                
+                Text(comment.content)
+                    .font(.system(size: 14))
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.leading)
+                
+                HStack(spacing: 16) {
+                    Button("Reply") {
+                        // TODO: Implement reply functionality
+                    }
+                    .font(.system(size: 12))
+                    .foregroundColor(.blue)
+                    
+                    Button("Like") {
+                        // TODO: Implement like functionality
+                    }
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+}
+
 #Preview {
     NavigationView {
-        NoteDetailView(note: MockData.shared.sampleNotes[0])
+        NoteDetailView(note: Note(
+            title: "Team Meeting Notes",
+            content: "Reviewed Q4 roadmap and discussed key priorities for the upcoming sprint.",
+            tags: ["meeting", "team", "roadmap"],
+            type: .note
+        ))
     }
 }
