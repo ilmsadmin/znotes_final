@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Group {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  domain    String   @unique @db.VarChar(255)
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  users User[]
+  notes Note[]
+
+  @@map("groups")
+}
+
+model User {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(255)
+  email       String    @unique @db.VarChar(255)
+  domain      String    @db.VarChar(255)
+  groupId     String    @map("group_id") @db.Uuid
+  role        Role      @default(member)
+  avatarUrl   String?   @map("avatar_url")
+  firebaseUid String    @unique @map("firebase_uid") @db.VarChar(255)
+  lastActive  DateTime? @map("last_active") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  group            Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  notesCreated     Note[]      @relation("NoteCreator")
+  comments         Comment[]
+  filesUploaded    File[]
+  activityLogs     ActivityLog[]
+  syncLogsAsUser   SyncLog[]   @relation("SyncLogUser")
+
+  @@index([email])
+  @@index([domain])
+  @@index([groupId])
+  @@index([firebaseUid])
+  @@map("users")
+}
+
+model Note {
+  id        String     @id @default(uuid()) @db.Uuid
+  groupId   String     @map("group_id") @db.Uuid
+  creatorId String     @map("creator_id") @db.Uuid
+  title     String     @db.VarChar(500)
+  content   String?
+  type      NoteType   @default(note)
+  status    NoteStatus @default(open)
+  metadata  Json       @default("{}")
+  version   Int        @default(1)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  group        Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  creator      User          @relation("NoteCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+  files        File[]
+  activityLogs ActivityLog[]
+  syncLogs     SyncLog[]
+
+  @@index([groupId])
+  @@index([creatorId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notes")
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  noteId    String   @map("note_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  content   String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  note   Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model File {
+  id         String   @id @default(uuid()) @db.Uuid
+  noteId     String   @map("note_id") @db.Uuid
+  fileUrl    String   @map("file_url")
+  fileName   String   @map("file_name") @db.VarChar(255)
+  fileType   String   @map("file_type") @db.VarChar(100)
+  fileSize   BigInt   @map("file_size")
+  uploadedBy String   @map("uploaded_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  note     Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([uploadedBy])
+  @@map("files")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  noteId    String?  @map("note_id") @db.Uuid
+  action    String   @db.VarChar(100)
+  details   Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note Note? @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([noteId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model SyncLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  noteId    String?  @map("note_id") @db.Uuid
+  tableName String   @map("table_name") @db.VarChar(50)
+  recordId  String   @map("record_id")
+  action    String   @db.VarChar(20)
+  oldData   Json?    @map("old_data")
+  newData   Json?    @map("new_data")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User  @relation("SyncLogUser", fields: [userId], references: [id], onDelete: Cascade)
+  note Note? @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([noteId])
+  @@index([tableName])
+  @@index([action])
+  @@index([createdAt])
+  @@map("sync_log")
+}
+
+// Enums
+enum Role {
+  admin
+  member
+}
+
+enum NoteType {
+  note
+  task
+  meeting
+  announcement
+}
+
+enum NoteStatus {
+  open
+  in_progress
+  completed
+  archived
+}
