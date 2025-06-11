@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 @Model
 final class Note {
@@ -70,11 +71,11 @@ enum Priority: String, CaseIterable, Codable {
         }
     }
     
-    var color: String {
+    var color: Color {
         switch self {
-        case .low: return "green"
-        case .medium: return "orange"
-        case .high: return "red"
+        case .low: return .green
+        case .medium: return .orange
+        case .high: return .red
         }
     }
 }

@@ -32,6 +32,7 @@ struct HomeView: View {
     @State private var selectedTab: TabType = .notes
     @State private var selectedView: ViewType = .list
     @State private var searchText = ""
+    @State private var showingCreateView = false
     
     // Mock data
     private let mockNotes = [
@@ -84,7 +85,7 @@ struct HomeView: View {
                 HStack {
                     Spacer()
                     Button(action: {
-                        // Add new item action
+                        showingCreateView = true
                     }) {
                         Image(systemName: "plus")
                             .font(.system(size: 24, weight: .semibold))
@@ -100,6 +101,9 @@ struct HomeView: View {
             }
         )
         .navigationBarHidden(true)
+        .sheet(isPresented: $showingCreateView) {
+            CreateView()
+        }
     }
     
     // MARK: - Header
