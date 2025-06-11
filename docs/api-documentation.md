@@ -768,6 +768,119 @@ enum SyncAction {
 }
 ```
 
+## Advanced Sync Operations
+
+### Initial Sync
+```graphql
+query InitialSync($lastSyncTime: DateTime, $tables: [String!]) {
+  initialSync(lastSyncTime: $lastSyncTime, tables: $tables) {
+    syncToken: String!
+    serverTime: DateTime!
+    data: SyncDataResponse!
+    deletions: DeletionResponse!
+  }
+}
+
+type SyncDataResponse {
+  notes: [Note!]!
+  comments: [Comment!]!
+  groups: [Group!]!
+}
+
+type DeletionResponse {
+  notes: [ID!]!
+  comments: [ID!]!
+  groups: [ID!]!
+}
+```
+
+### Delta Sync
+```graphql
+mutation DeltaSync($syncToken: String!, $clientChanges: [ClientChange!]!) {
+  deltaSync(syncToken: $syncToken, clientChanges: $clientChanges) {
+    syncToken: String!
+    serverTime: DateTime!
+    processedChanges: [ProcessedChange!]!
+    serverChanges: [ServerChange!]!
+  }
+}
+
+input ClientChange {
+  action: SyncAction!
+  table: String!
+  recordId: ID!
+  data: JSON!
+  localVersion: Int!
+  clientTimestamp: DateTime!
+}
+
+type ProcessedChange {
+  clientRecordId: ID!
+  serverRecordId: ID
+  status: ChangeStatus!
+  serverVersion: Int
+  conflictData: JSON
+}
+
+enum ChangeStatus {
+  SUCCESS
+  CONFLICT
+  ERROR
+}
+
+type ServerChange {
+  action: SyncAction!
+  table: String!
+  recordId: ID!
+  data: JSON!
+  version: Int!
+}
+```
+
+### Conflict Resolution
+```graphql
+mutation ResolveConflict($conflictId: ID!, $resolutionStrategy: ResolutionStrategy!, $mergedData: JSON) {
+  resolveConflict(conflictId: $conflictId, resolutionStrategy: $resolutionStrategy, mergedData: $mergedData) {
+    status: String!
+    finalData: JSON!
+    newVersion: Int!
+  }
+}
+
+enum ResolutionStrategy {
+  LOCAL
+  SERVER
+  MANUAL
+}
+```
+
+### Migration (Offline to Online)
+```graphql
+mutation MigrateOfflineData($offlineData: OfflineDataInput!, $deviceId: String!) {
+  migrateOfflineData(offlineData: $offlineData, deviceId: $deviceId) {
+    migrationId: ID!
+    idMappings: JSON!
+    conflicts: [MigrationConflict!]!
+  }
+}
+
+input OfflineDataInput {
+  user: JSON!
+  groups: [JSON!]!
+  notes: [JSON!]!
+  comments: [JSON!]!
+}
+
+type MigrationConflict {
+  table: String!
+  localId: ID!
+  conflictType: String!
+  data: JSON!
+}
+```
+
+> **Lưu ý**: Để biết chi tiết về cách thức hoạt động của hệ thống sync, vui lòng tham khảo [Offline/Online Sync Documentation](./offline-online-sync.md).
+
 ## Error Handling
 
 ### Error Types

@@ -68,6 +68,8 @@ NoteFlow được thiết kế theo mô hình client-server với khả năng of
 
 ## Offline/Online Synchronization
 
+> **Chi tiết đầy đủ**: Xem [Offline/Online Sync Documentation](./offline-online-sync.md) để hiểu sâu về kiến trúc và triển khai hệ thống đồng bộ.
+
 ### Chiến lược sync
 1. **Offline-first**: Mọi thao tác được lưu local trước
 2. **Queue-based**: Actions được queue khi offline

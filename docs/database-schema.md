@@ -4,6 +4,8 @@
 
 NoteFlow sử dụng PostgreSQL cho server database và SQLite cho local storage trên mobile devices. Thiết kế database được tối ưu cho performance và hỗ trợ offline synchronization.
 
+> **Lưu ý**: Để hiểu chi tiết về cách thức hoạt động của hệ thống sync và các bảng liên quan, vui lòng tham khảo [Offline/Online Sync Documentation](./offline-online-sync.md).
+
 ## Server Database (PostgreSQL)
 
 ### Schema Overview
@@ -126,7 +128,13 @@ CREATE TABLE notes (
     estimated_time INTEGER, -- in hours
     tags TEXT[] DEFAULT '{}',
     is_pinned BOOLEAN DEFAULT FALSE,
+    
+    -- Sync metadata for offline/online synchronization
     version INTEGER DEFAULT 1,
+    content_hash VARCHAR(64), -- SHA-256 of content for change detection
+    last_modified_by UUID REFERENCES users(id),
+    conflict_data JSONB, -- Data for conflict resolution
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
@@ -200,7 +208,12 @@ CREATE TABLE comments (
     parent_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     mentions UUID[] DEFAULT '{}', -- User IDs mentioned in comment
+    
+    -- Sync metadata for offline/online synchronization
     version INTEGER DEFAULT 1,
+    content_hash VARCHAR(64), -- SHA-256 of content for change detection
+    last_modified_by UUID REFERENCES users(id),
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -267,6 +280,91 @@ CREATE TABLE sync_log (
 CREATE INDEX idx_sync_log_user_id ON sync_log (user_id);
 CREATE INDEX idx_sync_log_record ON sync_log (table_name, record_id);
 CREATE INDEX idx_sync_log_created_at ON sync_log (created_at DESC);
+```
+
+#### sync_queue
+```sql
+CREATE TABLE sync_queue (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    table_name VARCHAR(50) NOT NULL,
+    record_id UUID NOT NULL,
+    action VARCHAR(20) NOT NULL CHECK (action IN ('create', 'update', 'delete')),
+    data JSONB NOT NULL,
+    client_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+    retry_count INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    error_message TEXT,
+    depends_on UUID REFERENCES sync_queue(id), -- For dependency handling
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_sync_queue_user_id ON sync_queue (user_id);
+CREATE INDEX idx_sync_queue_status ON sync_queue (status);
+CREATE INDEX idx_sync_queue_depends_on ON sync_queue (depends_on);
+```
+
+#### sync_metadata
+```sql
+CREATE TABLE sync_metadata (
+    table_name VARCHAR(50) NOT NULL,
+    record_id UUID NOT NULL,
+    server_version INTEGER NOT NULL DEFAULT 0,
+    local_version INTEGER NOT NULL DEFAULT 1,
+    last_synced TIMESTAMP WITH TIME ZONE NOT NULL,
+    checksum VARCHAR(64), -- For detecting changes
+    PRIMARY KEY (table_name, record_id)
+);
+
+-- Indexes
+CREATE INDEX idx_sync_metadata_last_synced ON sync_metadata (last_synced);
+```
+
+#### conflict_resolution
+```sql
+CREATE TABLE conflict_resolution (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    table_name VARCHAR(50) NOT NULL,
+    record_id UUID NOT NULL,
+    conflict_type VARCHAR(20) NOT NULL CHECK (conflict_type IN ('content', 'metadata', 'delete')),
+    local_version INTEGER NOT NULL,
+    server_version INTEGER NOT NULL,
+    local_data JSONB NOT NULL,
+    server_data JSONB NOT NULL,
+    resolution_strategy VARCHAR(20) CHECK (resolution_strategy IN ('local', 'server', 'manual')),
+    resolved_data JSONB,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    resolved_by UUID REFERENCES users(id),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'resolved')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_conflict_resolution_record ON conflict_resolution (table_name, record_id);
+CREATE INDEX idx_conflict_resolution_status ON conflict_resolution (status);
+CREATE INDEX idx_conflict_resolution_created_at ON conflict_resolution (created_at DESC);
+```
+
+#### offline_sessions
+```sql
+CREATE TABLE offline_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    device_id VARCHAR(255),
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE,
+    actions_count INTEGER DEFAULT 0,
+    notes_created INTEGER DEFAULT 0,
+    notes_modified INTEGER DEFAULT 0,
+    sync_completed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_offline_sessions_user_id ON offline_sessions (user_id);
+CREATE INDEX idx_offline_sessions_device_id ON offline_sessions (device_id);
+CREATE INDEX idx_offline_sessions_start_time ON offline_sessions (start_time DESC);
 ```
 
 ### Triggers
@@ -339,6 +437,31 @@ CREATE TRIGGER log_notes_changes AFTER INSERT OR UPDATE OR DELETE ON notes
 
 CREATE TRIGGER log_comments_changes AFTER INSERT OR UPDATE OR DELETE ON comments
     FOR EACH ROW EXECUTE FUNCTION log_changes();
+```
+
+#### Content hash calculation for sync
+```sql
+CREATE OR REPLACE FUNCTION calculate_content_hash()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Calculate SHA-256 hash of content for change detection
+    IF TG_TABLE_NAME = 'notes' THEN
+        NEW.content_hash = encode(digest(COALESCE(NEW.title, '') || '|' || COALESCE(NEW.content, ''), 'sha256'), 'hex');
+        NEW.last_modified_by = NEW.creator_id;
+    ELSIF TG_TABLE_NAME = 'comments' THEN
+        NEW.content_hash = encode(digest(COALESCE(NEW.content, ''), 'sha256'), 'hex');
+        NEW.last_modified_by = NEW.user_id;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER calculate_notes_content_hash BEFORE INSERT OR UPDATE ON notes
+    FOR EACH ROW EXECUTE FUNCTION calculate_content_hash();
+
+CREATE TRIGGER calculate_comments_content_hash BEFORE INSERT OR UPDATE ON comments
+    FOR EACH ROW EXECUTE FUNCTION calculate_content_hash();
 ```
 
 ### Views
