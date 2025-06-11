@@ -33,6 +33,10 @@ struct HomeView: View {
     @State private var selectedView: ViewType = .list
     @State private var searchText = ""
     @State private var showingCreateView = false
+    @State private var showingSettings = false
+    @State private var showingProfile = false
+    @State private var showingNotifications = false
+    @State private var showingSearch = false
     
     // Mock data
     private let mockNotes = [
@@ -104,6 +108,18 @@ struct HomeView: View {
         .sheet(isPresented: $showingCreateView) {
             CreateView()
         }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+        }
+        .sheet(isPresented: $showingProfile) {
+            SettingsView()
+        }
+        .sheet(isPresented: $showingNotifications) {
+            NotificationCenterView()
+        }
+        .fullScreenCover(isPresented: $showingSearch) {
+            SearchView()
+        }
     }
     
     // MARK: - Header
@@ -120,7 +136,9 @@ struct HomeView: View {
                 Spacer()
                 
                 HStack(spacing: 8) {
-                    Button(action: {}) {
+                    Button(action: {
+                        showingNotifications = true
+                    }) {
                         Image(systemName: "bell")
                             .font(.system(size: 18))
                             .foregroundColor(.secondary)
@@ -129,7 +147,9 @@ struct HomeView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     
-                    Button(action: {}) {
+                    Button(action: {
+                        showingProfile = true
+                    }) {
                         Image(systemName: "person.circle")
                             .font(.system(size: 18))
                             .foregroundColor(.secondary)
@@ -153,8 +173,14 @@ struct HomeView: View {
                     .foregroundColor(.secondary)
                     .font(.system(size: 16))
                 
-                TextField("Search notes, tasks, issues...", text: $searchText)
-                    .font(.system(size: 16))
+                Button(action: {
+                    showingSearch = true
+                }) {
+                    Text("Search notes, tasks, issues...")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -237,7 +263,9 @@ struct HomeView: View {
             
             Spacer()
             
-            Button(action: {}) {
+            Button(action: {
+                showingSettings = true
+            }) {
                 Image(systemName: "gearshape")
                     .font(.system(size: 16))
                     .foregroundColor(.secondary)
@@ -274,7 +302,10 @@ struct HomeView: View {
             if selectedView == .list {
                 // Notes List View
                 ForEach(filteredNotes, id: \.id) { note in
-                    noteCardView(note: note)
+                    NavigationLink(destination: NoteDetailView(note: createNoteFromSimple(note))) {
+                        noteCardView(note: note)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             } else {
                 // Notes Grid View
@@ -283,7 +314,10 @@ struct HomeView: View {
                     GridItem(.flexible(), spacing: 12)
                 ], spacing: 12) {
                     ForEach(filteredNotes, id: \.id) { note in
-                        noteCardView(note: note, isCompact: true)
+                        NavigationLink(destination: NoteDetailView(note: createNoteFromSimple(note))) {
+                            noteCardView(note: note, isCompact: true)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
             }
@@ -704,4 +738,32 @@ enum ViewType {
 
 #Preview {
     HomeView()
+}
+
+// MARK: - Helper Functions Extension
+extension HomeView {
+    private func createNoteFromSimple(_ simpleNote: SimpleNote) -> Note {
+        let note = Note(
+            title: simpleNote.title,
+            content: simpleNote.content,
+            tags: simpleNote.tags,
+            type: NoteType(rawValue: simpleNote.type) ?? .note
+        )
+        return note
+    }
+    
+    private func createTaskFromSimple(_ simpleTask: SimpleTask) -> Task {
+        let priority = Priority(rawValue: simpleTask.priority) ?? .medium
+        let status = TaskStatus(rawValue: simpleTask.status) ?? .todo
+        
+        let task = Task(
+            title: simpleTask.title,
+            content: simpleTask.content,
+            priority: priority,
+            status: status,
+            tags: simpleTask.tags,
+            dueDate: simpleTask.dueDate
+        )
+        return task
+    }
 }

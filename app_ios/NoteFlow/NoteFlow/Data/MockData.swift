@@ -95,4 +95,22 @@ class MockData {
             type: .issue
         )
     ]
+    
+    lazy var sampleComments: [Comment] = [
+        Comment(
+            noteId: sampleNotes[0].id,
+            userId: UUID(),
+            content: "Great meeting notes! I especially appreciate the detailed breakdown of Q4 priorities."
+        ),
+        Comment(
+            noteId: sampleNotes[0].id,
+            userId: UUID(),
+            content: "Can we add more details about the timeline for mobile app development?"
+        ),
+        Comment(
+            noteId: sampleNotes[1].id,
+            userId: UUID(),
+            content: "The AI-powered note organization idea sounds promising. Have we looked into existing solutions?"
+        )
+    ]
 }
