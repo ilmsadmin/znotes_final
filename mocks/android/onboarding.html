@@ -382,7 +382,7 @@
                 <div class="android-hero">
                     <div class="android-logo">N</div>
                     <h1 class="android-title">Welcome to NoteFlow</h1>
-                    <p class="android-subtitle">The smart workspace for teams who value simplicity and efficiency</p>
+                    <p class="android-subtitle">Create groups, collaborate with your team, and stay organized - all with powerful offline sync</p>
                 </div>
 
                 <div class="material-feature-list">
@@ -485,7 +485,7 @@
             </div>
         </div>
 
-        <!-- Screen 3: Group Setup -->
+        <!-- Screen 3: Group Setup Options -->
         <div class="android-screen" id="group-setup">
             <div class="android-status-bar">
                 <span>9:41</span>
@@ -496,7 +496,7 @@
                 <button class="android-nav-icon" onclick="showScreen('signup')">
                     <span class="material-icons">arrow_back</span>
                 </button>
-                <h1 class="android-app-bar-title">Join Your Team</h1>
+                <h1 class="android-app-bar-title">Get Started</h1>
             </div>
 
             <div class="android-content">
@@ -504,37 +504,165 @@
                     <div style="width: 96px; height: 96px; background: var(--primary-100); border-radius: var(--radius-full); margin: 0 auto var(--space-6); display: flex; align-items: center; justify-content: center;">
                         <span class="material-icons" style="font-size: 48px; color: var(--primary-600);">groups</span>
                     </div>
-                    <h2 class="text-2xl font-bold mb-4">Welcome to TechCorp!</h2>
-                    <p class="text-secondary">We found an existing workspace for your email domain. You'll be added as a team member.</p>
+                    <h2 class="text-2xl font-bold mb-4">Choose Your Setup</h2>
+                    <p class="text-secondary">How would you like to start using NoteFlow?</p>
                 </div>
 
-                <div class="material-card">
-                    <h3 class="font-semibold mb-6">Workspace Details</h3>
-                    <div style="margin-bottom: var(--space-4);">
-                        <div class="text-sm text-secondary">Workspace Name</div>
-                        <div class="font-medium text-lg">TechCorp</div>
+                <div style="margin-bottom: var(--space-6);">
+                    <button class="material-card" onclick="showScreen('create-group')" style="width: 100%; text-align: left; background: white; border: 2px solid var(--primary-200); cursor: pointer;">
+                        <div style="display: flex; align-items: center; gap: var(--space-4);">
+                            <div style="width: 48px; height: 48px; background: var(--primary-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                <span class="material-icons" style="color: var(--primary-600);">add_circle</span>
+                            </div>
+                            <div style="flex: 1;">
+                                <h3 class="font-semibold mb-1">Create New Group</h3>
+                                <p class="text-sm text-secondary">Start your own workspace and invite team members</p>
+                                <p class="text-xs text-secondary mt-1">Free: Up to 2 groups, 5 members each</p>
+                            </div>
+                            <span class="material-icons" style="color: var(--text-tertiary);">arrow_forward_ios</span>
+                        </div>
+                    </button>
+                </div>
+
+                <div style="margin-bottom: var(--space-6);">
+                    <button class="material-card" onclick="showScreen('join-group')" style="width: 100%; text-align: left; background: white; border: 2px solid var(--border-color); cursor: pointer;">
+                        <div style="display: flex; align-items: center; gap: var(--space-4);">
+                            <div style="width: 48px; height: 48px; background: var(--success-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                <span class="material-icons" style="color: var(--success-600);">group_add</span>
+                            </div>
+                            <div style="flex: 1;">
+                                <h3 class="font-semibold mb-1">Join Existing Group</h3>
+                                <p class="text-sm text-secondary">Use an invitation link to join a team</p>
+                            </div>
+                            <span class="material-icons" style="color: var(--text-tertiary);">arrow_forward_ios</span>
+                        </div>
+                    </button>
+                </div>
+
+                <div style="margin-bottom: var(--space-8);">
+                    <button class="material-card" onclick="showScreen('tutorial')" style="width: 100%; text-align: left; background: white; border: 2px solid var(--border-color); cursor: pointer;">
+                        <div style="display: flex; align-items: center; gap: var(--space-4);">
+                            <div style="width: 48px; height: 48px; background: var(--gray-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                <span class="material-icons" style="color: var(--gray-600);">person</span>
+                            </div>
+                            <div style="flex: 1;">
+                                <h3 class="font-semibold mb-1">Continue Individual</h3>
+                                <p class="text-sm text-secondary">Use NoteFlow for personal notes and tasks</p>
+                            </div>
+                            <span class="material-icons" style="color: var(--text-tertiary);">arrow_forward_ios</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen 3a: Create Group -->
+        <div class="android-screen" id="create-group" style="display: none;">
+            <div class="android-status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            
+            <div class="android-app-bar">
+                <button class="android-nav-icon" onclick="showScreen('group-setup')">
+                    <span class="material-icons">arrow_back</span>
+                </button>
+                <h1 class="android-app-bar-title">Create Group</h1>
+            </div>
+
+            <div class="android-content">
+                <div style="margin-bottom: var(--space-8);">
+                    <h2 class="text-xl font-bold mb-2">Create Your Group</h2>
+                    <p class="text-secondary">Set up your workspace and start collaborating</p>
+                </div>
+
+                <div class="material-form-group">
+                    <div class="material-text-field">
+                        <input type="text" placeholder=" " value="My Awesome Team">
+                        <label>Group Name *</label>
                     </div>
-                    <div style="margin-bottom: var(--space-4);">
-                        <div class="text-sm text-secondary">Domain</div>
-                        <div class="font-medium">techcorp.com</div>
+                </div>
+
+                <div class="material-form-group">
+                    <div class="material-text-field">
+                        <input type="text" placeholder=" " value="A collaborative workspace for our team projects and daily tasks">
+                        <label>Description (Optional)</label>
                     </div>
-                    <div style="margin-bottom: var(--space-4);">
-                        <div class="text-sm text-secondary">Team Size</div>
-                        <div class="font-medium">12 members</div>
+                </div>
+
+                <div style="margin: var(--space-6) 0;">
+                    <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+                        <span class="material-icons" style="color: var(--primary-600);">info</span>
+                        <span class="text-sm font-medium">Free Plan Limits</span>
                     </div>
-                    <div>
-                        <div class="text-sm text-secondary">Your Role</div>
-                        <span class="material-chip">Member</span>
+                    <div style="background: var(--primary-50); padding: var(--space-4); border-radius: var(--radius-lg); border-left: 4px solid var(--primary-500);">
+                        <p class="text-sm text-secondary">
+                            • Up to 2 groups per user<br>
+                            • Maximum 5 members per group<br>
+                            • Upgrade to Premium for unlimited groups and members
+                        </p>
                     </div>
                 </div>
             </div>
 
             <div class="material-bottom-actions">
                 <button class="material-button material-button-filled" onclick="showScreen('tutorial')">
-                    <span class="material-icons">group_add</span>
-                    Join Workspace
+                    <span class="material-icons">check</span>
+                    Create Group
                 </button>
-                <button class="material-button material-button-text">Create New Workspace Instead</button>
+            </div>
+        </div>
+
+        <!-- Screen 3b: Join Group -->
+        <div class="android-screen" id="join-group" style="display: none;">
+            <div class="android-status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            
+            <div class="android-app-bar">
+                <button class="android-nav-icon" onclick="showScreen('group-setup')">
+                    <span class="material-icons">arrow_back</span>
+                </button>
+                <h1 class="android-app-bar-title">Join Group</h1>
+            </div>
+
+            <div class="android-content">
+                <div style="text-align: center; margin-bottom: var(--space-8);">
+                    <div style="width: 96px; height: 96px; background: var(--success-100); border-radius: var(--radius-full); margin: 0 auto var(--space-6); display: flex; align-items: center; justify-content: center;">
+                        <span class="material-icons" style="font-size: 48px; color: var(--success-600);">group_add</span>
+                    </div>
+                    <h2 class="text-xl font-bold mb-2">Join "Design Team"</h2>
+                    <p class="text-secondary">You've been invited to join this group</p>
+                </div>
+
+                <div class="material-card">
+                    <h3 class="font-semibold mb-6">Group Details</h3>
+                    <div style="margin-bottom: var(--space-4);">
+                        <div class="text-sm text-secondary">Group Name</div>
+                        <div class="font-medium text-lg">Design Team</div>
+                    </div>
+                    <div style="margin-bottom: var(--space-4);">
+                        <div class="text-sm text-secondary">Admin</div>
+                        <div class="font-medium">Sarah Johnson</div>
+                    </div>
+                    <div style="margin-bottom: var(--space-4);">
+                        <div class="text-sm text-secondary">Members</div>
+                        <div class="font-medium">3 of 5 members</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-secondary">Description</div>
+                        <div class="font-medium">Collaborative workspace for design projects, feedback, and creative tasks.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="material-bottom-actions">
+                <button class="material-button material-button-filled" onclick="showScreen('tutorial')">
+                    <span class="material-icons">check</span>
+                    Join Group
+                </button>
+                <button class="material-button material-button-text">Decline Invitation</button>
             </div>
         </div>
 
@@ -687,7 +815,9 @@
         <button class="control-btn" onclick="showScreen('welcome')">Welcome</button>
         <button class="control-btn" onclick="showScreen('signup')">Sign Up</button>
         <button class="control-btn" onclick="showScreen('signin')">Sign In</button>
-        <button class="control-btn" onclick="showScreen('group-setup')">Team</button>
+        <button class="control-btn" onclick="showScreen('group-setup')">Setup</button>
+        <button class="control-btn" onclick="showScreen('create-group')">Create</button>
+        <button class="control-btn" onclick="showScreen('join-group')">Join</button>
         <button class="control-btn" onclick="showScreen('tutorial')">Tutorial</button>
         <button class="control-btn" onclick="showScreen('home')">Home</button>
     </div>

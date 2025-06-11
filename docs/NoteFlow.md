@@ -53,12 +53,20 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 - Chỉnh sửa/xóa bình luận với lịch sử chỉnh sửa.
 - Pin comment quan trọng.
 
-### **2.6 Nhóm theo domain email (Group)**
-- Tự động tạo/thêm vào nhóm dựa trên domain email (VD: @company.com).
+### **2.6 Nhóm làm việc (Group)**
+- **Giai đoạn 1 - Miễn phí**:
+  - Người dùng được tạo tối đa 2 nhóm miễn phí.
+  - Người tạo trở thành admin của nhóm.
+  - Admin có thể mời/thêm thành viên vào nhóm (tối đa 5 người/nhóm).
+  - Chỉ thành viên trong nhóm mới thấy danh sách và thông tin thành viên khác.
+- **Thông tin nhóm**:
+  - Tên nhóm, admin nhóm, số lượng thành viên.
+  - Avatar và mô tả nhóm (tùy chọn).
 - **Vai trò**:
-  - Admin: Quản lý thành viên, xóa task/issue.
-  - Member: Tạo, xem, bình luận task/issue.
-- Dữ liệu chỉ chia sẻ trong nhóm, không liên thông giữa các nhóm.
+  - Admin: Quản lý thành viên, mời/xóa thành viên, xóa task/issue, chỉnh sửa thông tin nhóm.
+  - Member: Tạo, xem, bình luận task/issue, mention và assignment các thành viên khác.
+- **Quyền riêng tư**: Dữ liệu chỉ chia sẻ trong nhóm, không liên thông giữa các nhóm.
+- **Tương tác**: Thành viên có thể comment, assign, mention nhau trong notes/tasks/issues.
 
 ### **2.7 Thông báo (Notification)**
 - **Kênh**:
@@ -119,11 +127,9 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
   id: UUID,
   name: string,
   email: string,
-  domain: string,
-  group_id: UUID,
-  role: "admin" | "member",
   avatar_url: string,
-  created_at: timestamp
+  created_at: timestamp,
+  updated_at: timestamp
 }
 ```
 
@@ -131,12 +137,52 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 ```json
 {
   id: UUID,
-  name: string, // domain, ví dụ: "company.com"
+  name: string, // tên nhóm do người dùng đặt
+  description: string, // mô tả nhóm (tùy chọn)
+  avatar_url: string, // avatar nhóm (tùy chọn)
+  creator_id: UUID, // người tạo nhóm
+  created_at: timestamp,
+  updated_at: timestamp
+}
+```
+
+### **4.3 group_members**
+```json
+{
+  id: UUID,
+  group_id: UUID,
+  user_id: UUID,
+  role: "admin" | "member",
+  joined_at: timestamp
+}
+```
+
+### **4.4 group_invitations**
+```json
+{
+  id: UUID,
+  group_id: UUID,
+  invited_by: UUID, // admin gửi lời mời
+  email: string, // email người được mời
+  token: string, // token xác thực lời mời
+  status: "pending" | "accepted" | "declined" | "expired",
+  expires_at: timestamp,
   created_at: timestamp
 }
 ```
 
-### **4.3 notes**
+### **4.5 user_group_limits**
+```json
+{
+  user_id: UUID,
+  created_groups_count: number, // số nhóm đã tạo
+  max_groups_allowed: number, // giới hạn tạo nhóm (2 cho free)
+  plan_type: "free" | "premium", // loại gói
+  updated_at: timestamp
+}
+```
+
+### **4.6 notes**
 ```json
 {
   id: UUID,
@@ -158,7 +204,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 }
 ```
 
-### **4.4 assignments**
+### **4.7 assignments**
 ```json
 {
   id: UUID,
@@ -168,7 +214,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 }
 ```
 
-### **4.5 comments**
+### **4.8 comments**
 ```json
 {
   id: UUID,
@@ -181,7 +227,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 }
 ```
 
-### **4.6 files**
+### **4.9 files**
 ```json
 {
   id: UUID,
@@ -194,7 +240,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 }
 ```
 
-### **4.7 notifications**
+### **4.10 notifications**
 ```json
 {
   id: UUID,
@@ -228,39 +274,56 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 
 ## **6. Luồng người dùng**
 
-### **6.1 Đăng ký & Tạo nhóm**
-1. Người dùng đăng ký với email (VD: alice@abc.com).
-2. Tách domain (abc.com).
-3. Kiểm tra group:
-   - Nếu không tồn tại: Tạo group mới, người dùng là admin.
-   - Nếu tồn tại: Thêm vào group với vai trò member.
-4. Gửi email xác nhận.
+### **6.1 Đăng ký & Thiết lập ban đầu**
+1. Người dùng đăng ký với email (VD: alice@example.com).
+2. Tạo hồ sơ cá nhân (tên, avatar).
+3. Hoàn tất đăng ký và xác nhận email.
+4. Chuyển đến màn hình chào mừng với các tùy chọn:
+   - Tạo nhóm mới (trở thành admin)
+   - Tham gia nhóm qua lời mời (nếu có)
+   - Bỏ qua và sử dụng cá nhân
 
-### **6.2 Giao việc & Bình luận**
-1. Tạo task/issue, chọn assignee từ danh sách nhóm.
-2. Bình luận trong task/issue, @mention thành viên.
+### **6.2 Tạo & Quản lý nhóm**
+1. Admin tạo nhóm mới (giới hạn 2 nhóm miễn phí).
+2. Thiết lập thông tin nhóm: tên, mô tả, avatar.
+3. Mời thành viên qua email hoặc chia sẻ link mời.
+4. Quản lý thành viên: thêm/xóa, thay đổi vai trò.
+5. Giới hạn: tối đa 5 thành viên/nhóm (gói miễn phí).
+
+### **6.3 Tham gia nhóm qua lời mời**
+1. Nhận email mời hoặc click link mời.
+2. Đăng nhập hoặc đăng ký nếu chưa có tài khoản.
+3. Xem thông tin nhóm: tên, admin, số thành viên.
+4. Chấp nhận hoặc từ chối lời mời.
+5. Nếu chấp nhận: tự động trở thành member của nhóm.
+
+### **6.4 Giao việc & Bình luận trong nhóm**
+1. Tạo task/issue, chọn assignee từ danh sách thành viên nhóm.
+2. Bình luận trong task/issue, @mention thành viên cùng nhóm.
 3. Gửi push notification/email khi có assign hoặc comment.
+4. Chỉ thành viên cùng nhóm mới thấy được thông tin và có thể tương tác.
 
 ## **7. Phân tích cạnh tranh**
 
 | Tính năng            | NoteFlow | Notion | Trello | Jira |
 |----------------------|----------|--------|--------|------|
 | Offline sync         | ✅       | ❌     | ❌     | ❌   |
-| Group theo domain    | ✅       | ❌     | ❌     | ✅   |
+| Group tạo thủ công   | ✅       | ❌     | ❌     | ✅   |
+| Giới hạn miễn phí    | ✅ (2 nhóm, 5 người) | ❌ | ❌ | ❌ |
 | Kanban board         | ✅       | ✅     | ✅     | ✅   |
 | Giao diện đơn giản   | ✅       | ✅     | ✅     | ❌   |
 | Tích hợp Google Calendar | ✅ (v2) | ✅     | ✅     | ✅   |
 
-**USP của NoteFlow**: Giao diện đơn giản, offline sync mạnh mẽ, phù hợp nhóm nhỏ không cần cấu hình phức tạp.
+**USP của NoteFlow**: Giao diện đơn giản, offline sync mạnh mẽ, phù hợp nhóm nhỏ với mô hình miễn phí hấp dẫn và không cần cấu hình phức tạp.
 
 ## **8. Lộ trình triển khai (Roadmap)**
 
 | Giai đoạn | Nội dung | Thời gian | Tiêu chí thành công |
 |-----------|----------|-----------|---------------------|
-| **MVP v1** | Note, Task, Issue, Comment, Assign, Offline sync | 3 tháng | 500 người dùng active, crash rate <1% |
-| **MVP v2** | Group theo domain, Push/Email notification, Kanban board, Google Calendar | 3 tháng | 2000 người dùng, 90% hài lòng UX |
-| **v3** | Web version, AI gợi ý ưu tiên, Export PDF, Slack integration | 4 tháng | 10,000 người dùng, 50 doanh nghiệp đăng ký |
-| **v4** | Phân quyền nâng cao, 2FA, Audit log | 3 tháng | 95% uptime, 0 lỗ hổng bảo mật |
+| **MVP v1** | Note, Task, Issue, Comment, Assign, Offline sync, Group tạo thủ công (giai đoạn 1 miễn phí) | 3 tháng | 500 người dùng active, crash rate <1% |
+| **MVP v2** | Group management nâng cao, Push/Email notification, Kanban board, Google Calendar | 3 tháng | 2000 người dùng, 90% hài lòng UX |
+| **v3** | Web version, Gói premium (nhiều nhóm/thành viên), AI gợi ý ưu tiên, Export PDF | 4 tháng | 10,000 người dùng, 50 doanh nghiệp đăng ký |
+| **v4** | Phân quyền nâng cao, 2FA, Audit log, Slack integration | 3 tháng | 95% uptime, 0 lỗ hổng bảo mật |
 
 ## **9. Hiệu suất & Kiểm thử**
 

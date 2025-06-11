@@ -282,6 +282,33 @@ function requirePermission(permission) {
   };
 }
 
+function requireGroupMembership(groupId) {
+  return async (req, res, next) => {
+    const user = req.user;
+    
+    try {
+      // Check if user is a member of the specified group
+      const membership = await GroupMember.findOne({
+        where: {
+          groupId: groupId || req.params.groupId,
+          userId: user.userId
+        }
+      });
+      
+      if (!membership) {
+        return res.status(403).json({
+          error: 'Access denied - not a member of this group'
+        });
+      }
+      
+      req.groupMembership = membership;
+      next();
+    } catch (error) {
+      res.status(500).json({ error: 'Error checking group membership' });
+    }
+  };
+}
+
 function requireResource(resourceType) {
   return async (req, res, next) => {
     const { id } = req.params;
@@ -290,24 +317,60 @@ function requireResource(resourceType) {
     try {
       const resource = await getResource(resourceType, id);
       
-      // Check if user has access to this resource
-      if (resource.groupId !== user.groupId) {
+      // Check if user is a member of the resource's group
+      const membership = await GroupMember.findOne({
+        where: {
+          groupId: resource.groupId,
+          userId: user.userId
+        }
+      });
+      
+      if (!membership) {
         return res.status(403).json({
-          error: 'Access denied to resource'
+          error: 'Access denied to resource - not a group member'
         });
       }
       
-      // Check if user owns the resource or is admin
-      if (resource.creatorId !== user.userId && user.role !== 'admin') {
+      // Check if user owns the resource or is group admin
+      if (resource.creatorId !== user.userId && membership.role !== 'admin') {
         return res.status(403).json({
-          error: 'Access denied to resource'
+          error: 'Access denied to resource - insufficient permissions'
         });
       }
       
       req.resource = resource;
+      req.groupMembership = membership;
       next();
     } catch (error) {
       res.status(404).json({ error: 'Resource not found' });
+    }
+  };
+}
+
+function requireGroupAdmin() {
+  return async (req, res, next) => {
+    const user = req.user;
+    const groupId = req.params.groupId;
+    
+    try {
+      const membership = await GroupMember.findOne({
+        where: {
+          groupId: groupId,
+          userId: user.userId,
+          role: 'admin'
+        }
+      });
+      
+      if (!membership) {
+        return res.status(403).json({
+          error: 'Access denied - admin role required'
+        });
+      }
+      
+      req.groupMembership = membership;
+      next();
+    } catch (error) {
+      res.status(500).json({ error: 'Error checking admin permissions' });
     }
   };
 }

@@ -26,14 +26,24 @@ flowchart TD
     K --> J
     L --> J
     
-    J --> M[Auto-detect domain]
-    M --> N[Join existing group?]
-    N -->|Yes| O[Join as member]
-    N -->|No| P[Create new group as admin]
+    J --> M[Group setup options]
+    M --> N[Create new group]
+    M --> O[Join via invitation]
+    M --> P[Continue individual]
     
-    O --> Q[Welcome tutorial]
-    P --> Q
-    Q --> R[First note prompt]
+    N --> Q[Check group creation limit]
+    Q -->|At limit| R[Show upgrade options]
+    Q -->|Under limit| S[Create group form]
+    S --> T[Set as group admin]
+    
+    O --> U[Validate invitation]
+    U -->|Valid| V[Join as member]
+    U -->|Invalid| W[Show error]
+    
+    T --> X[Welcome tutorial]
+    V --> X
+    P --> X
+    X --> Y[First note prompt]
 ```
 
 #### Detailed Steps
@@ -80,11 +90,14 @@ interface UserProfile {
 }
 ```
 
-**Step 6: Group Assignment**
-- Extract domain from email (e.g., user@company.com → company.com)
-- Check if group exists for this domain
-- If exists: Show group info, request to join
-- If not exists: Create new group, user becomes admin
+**Step 6: Group Setup Options**
+- Show 3 options:
+  - Create new group (if under limit of 2 groups)
+  - Join existing group via invitation link
+  - Continue without group (individual mode)
+- If creating group: Show group creation form
+- If joining: Show invitation validation and group info
+- Track group creation limits per user
 
 **Step 7: Welcome Tutorial**
 - Interactive walkthrough of key features
@@ -362,9 +375,145 @@ flowchart TD
     M -->|No| O[Revert UI, show error]
 ```
 
-## Flow 4: Team Collaboration
+## Flow 4: Group Management
 
-### 4.1 Commenting Flow
+### 4.1 Group Creation Flow
+
+```mermaid
+flowchart TD
+    A[User clicks 'Create Group'] --> B[Check group creation limit]
+    B --> C[Under limit?]
+    C -->|No| D[Show upgrade message]
+    C -->|Yes| E[Show group creation form]
+    
+    E --> F[Enter group details]
+    F --> G[Group name]
+    F --> H[Description (optional)]
+    F --> I[Avatar (optional)]
+    
+    G --> J[Validate group name]
+    J --> K[Name available?]
+    K -->|No| L[Show error, suggest alternatives]
+    K -->|Yes| M[Create group]
+    
+    M --> N[Set user as admin]
+    N --> O[Update group creation count]
+    O --> P[Show success message]
+    P --> Q[Navigate to group dashboard]
+```
+
+#### Group Creation Validation
+```typescript
+interface GroupValidation {
+  name: {
+    required: true;
+    minLength: 3;
+    maxLength: 50;
+    noSpecialChars: true;
+  };
+  description: {
+    maxLength: 500;
+  };
+  memberLimit: {
+    free: 5;
+    premium: 50;
+  };
+}
+```
+
+### 4.2 Group Invitation Flow
+
+```mermaid
+flowchart TD
+    A[Admin clicks 'Invite Members'] --> B[Check member limit]
+    B --> C[Under limit?]
+    C -->|No| D[Show upgrade message]
+    C -->|Yes| E[Show invitation form]
+    
+    E --> F[Enter email addresses]
+    F --> G[Validate emails]
+    G --> H[Valid emails?]
+    H -->|No| I[Show validation errors]
+    H -->|Yes| J[Generate invitation tokens]
+    
+    J --> K[Send invitation emails]
+    K --> L[Save invitations to DB]
+    L --> M[Show success message]
+    M --> N[Update pending invitations list]
+    
+    K --> O[Email delivery failed?]
+    O -->|Yes| P[Mark as failed, allow resend]
+    O -->|No| Q[Mark as sent]
+```
+
+#### Invitation Email Template
+```typescript
+interface InvitationEmail {
+  to: string;
+  subject: string;
+  templateData: {
+    groupName: string;
+    inviterName: string;
+    invitationLink: string;
+    expiresAt: Date;
+  };
+}
+```
+
+### 4.3 Group Member Management Flow
+
+```mermaid
+flowchart TD
+    A[Admin views group members] --> B[Show member list]
+    B --> C[Admin actions available]
+    C --> D[Remove member]
+    C --> E[Change role]
+    C --> F[Resend invitation]
+    
+    D --> G[Confirm removal]
+    G --> H[User confirms?]
+    H -->|Yes| I[Remove from group]
+    H -->|No| J[Cancel action]
+    
+    I --> K[Update member count]
+    K --> L[Notify removed user]
+    L --> M[Refresh member list]
+    
+    E --> N[Select new role]
+    N --> O[Update member role]
+    O --> P[Notify user of role change]
+    
+    F --> Q[Generate new invitation]
+    Q --> R[Send invitation email]
+    R --> S[Update invitation status]
+```
+
+### 4.4 Group Settings Management
+
+```mermaid
+flowchart TD
+    A[Admin opens group settings] --> B[Show settings form]
+    B --> C[Group information]
+    B --> D[Privacy settings]
+    B --> E[Notification settings]
+    
+    C --> F[Edit name/description]
+    F --> G[Validate changes]
+    G --> H[Save changes]
+    H --> I[Update group info]
+    
+    D --> J[Member visibility settings]
+    J --> K[Who can invite members]
+    K --> L[Content sharing rules]
+    
+    E --> M[Default notification preferences]
+    M --> N[Group-wide announcements]
+    N --> O[Activity summaries]
+```
+
+## Flow 11: Team Collaboration (Renamed from Flow 4)
+
+### 5.1 Commenting Flow
 
 ```mermaid
 flowchart TD
@@ -410,7 +559,7 @@ const parseMentions = (text: string): string[] => {
 };
 ```
 
-### 4.2 Real-time Collaboration
+### 5.2 Real-time Collaboration
 
 ```mermaid
 flowchart TD
@@ -464,7 +613,7 @@ class OperationalTransform {
 }
 ```
 
-### 4.3 File Sharing Flow
+### 5.3 File Sharing Flow
 
 ```mermaid
 flowchart TD
@@ -522,7 +671,7 @@ const validateFile = (file: File): ValidationResult => {
 };
 ```
 
-## Flow 5: Offline/Online Synchronization
+## Flow 11: Offline/Online Synchronization
 
 ### 5.1 Going Offline Flow
 
@@ -620,7 +769,7 @@ const ConflictResolver: React.FC<{
 };
 ```
 
-## Flow 6: Search & Discovery
+## Flow 11: Search & Discovery
 
 ### 6.1 Search Flow
 
@@ -712,7 +861,7 @@ flowchart TD
     L --> M[Add to quick filters]
 ```
 
-## Flow 7: Settings & Preferences
+## Flow 11: Settings & Preferences
 
 ### 7.1 Account Settings Flow
 
@@ -775,7 +924,7 @@ flowchart TD
     T --> U[Show success message]
 ```
 
-## Flow 8: Error Handling & Recovery
+## Flow 11: Error Handling & Recovery
 
 ### 8.1 Network Error Flow
 
@@ -825,7 +974,7 @@ flowchart TD
     L --> P[Resume normal operation]
 ```
 
-## Flow 9: Performance Optimization
+## Flow 11: Performance Optimization
 
 ### 9.1 Lazy Loading Flow
 
@@ -875,7 +1024,7 @@ flowchart TD
     J --> M
 ```
 
-## Flow 10: Accessibility Features
+## Flow 11: Accessibility Features
 
 ### 10.1 Voice Control Flow
 
