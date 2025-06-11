@@ -16,6 +16,7 @@ Một ứng dụng ghi chú và quản lý công việc đa năng, kết hợp g
 ```
 ├── docs/          # Tài liệu dự án
 ├── backend/       # Backend API (Node.js)
+├── frontend/      # Web App Frontend (Next.js)
 ├── app_ios/       # Ứng dụng iOS (SwiftUI)
 └── app_android/   # Ứng dụng Android (Jetpack Compose)
 ```
@@ -43,6 +44,7 @@ Xem thư mục [docs/](./docs/) để biết thêm chi tiết về:
 ## Công nghệ sử dụng
 
 - **Backend**: Node.js + Express, PostgreSQL, GraphQL
+- **Frontend**: Next.js + TypeScript, Redux Toolkit, Tailwind CSS
 - **iOS**: SwiftUI, SQLite (offline)
 - **Android**: Jetpack Compose, SQLite (offline)  
 - **Auth**: Firebase Authentication
