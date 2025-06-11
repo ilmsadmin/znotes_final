@@ -1,14 +1,18 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityService } from '../activity/activity.service';
 import { CreateNoteInput, UpdateNoteInput } from '../common/dto/input.dto';
 import { Note, NoteType, NoteStatus } from '../common/types/prisma.types';
 
 @Injectable()
 export class NotesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activityService: ActivityService,
+  ) {}
 
   async create(userId: string, groupId: string, createNoteInput: CreateNoteInput): Promise<Note> {
-    return this.prisma.note.create({
+    const note = await this.prisma.note.create({
       data: {
         ...createNoteInput,
         creatorId: userId,
@@ -28,6 +32,11 @@ export class NotesService {
         }
       },
     });
+
+    // Log activity
+    await this.activityService.logNoteCreated(userId, note.id, note.title);
+
+    return note;
   }
 
   async findAll(groupId: string, type?: NoteType, status?: NoteStatus): Promise<Note[]> {
@@ -101,7 +110,7 @@ export class NotesService {
       throw new ForbiddenException('Access denied');
     }
 
-    return this.prisma.note.update({
+    const updatedNote = await this.prisma.note.update({
       where: { id },
       data: {
         ...updateNoteInput,
@@ -120,6 +129,11 @@ export class NotesService {
         }
       },
     });
+
+    // Log activity
+    await this.activityService.logNoteUpdated(userId, id, updateNoteInput);
+
+    return updatedNote;
   }
 
   async remove(id: string, userId: string, groupId: string): Promise<boolean> {
@@ -143,6 +157,9 @@ export class NotesService {
     await this.prisma.note.delete({
       where: { id }
     });
+
+    // Log activity
+    await this.activityService.logNoteDeleted(userId, id, note.title);
 
     return true;
   }

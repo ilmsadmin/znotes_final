@@ -13,6 +13,7 @@ import { UsersModule } from './users/users.module';
 import { GroupsModule } from './groups/groups.module';
 import { NotesModule } from './notes/notes.module';
 import { CommentsModule } from './comments/comments.module';
+import { ActivityModule } from './activity/activity.module';
 import { join } from 'path';
 
 @Module({
@@ -50,6 +51,7 @@ import { join } from 'path';
     GroupsModule,
     NotesModule,
     CommentsModule,
+    ActivityModule,
   ],
   controllers: [AppController],
   providers: [AppService],
