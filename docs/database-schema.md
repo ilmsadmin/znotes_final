@@ -24,9 +24,6 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    domain VARCHAR(255) NOT NULL,
-    group_id UUID NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'member')),
     avatar_url TEXT,
     firebase_uid VARCHAR(255) UNIQUE NOT NULL,
     last_active TIMESTAMP WITH TIME ZONE,
@@ -36,8 +33,6 @@ CREATE TABLE users (
 
 -- Indexes
 CREATE INDEX idx_users_email ON users (email);
-CREATE INDEX idx_users_domain ON users (domain);
-CREATE INDEX idx_users_group_id ON users (group_id);
 CREATE INDEX idx_users_firebase_uid ON users (firebase_uid);
 ```
 
@@ -46,14 +41,72 @@ CREATE INDEX idx_users_firebase_uid ON users (firebase_uid);
 CREATE TABLE groups (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    domain VARCHAR(255) UNIQUE NOT NULL,
+    description TEXT,
+    avatar_url TEXT,
+    creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    max_members INTEGER DEFAULT 5, -- Free tier limit
     settings JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes
-CREATE INDEX idx_groups_domain ON groups (domain);
+CREATE INDEX idx_groups_creator_id ON groups (creator_id);
+CREATE INDEX idx_groups_name ON groups (name);
+```
+
+#### group_members
+```sql
+CREATE TABLE group_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'member')),
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    UNIQUE(group_id, user_id)
+);
+
+-- Indexes
+CREATE INDEX idx_group_members_group_id ON group_members (group_id);
+CREATE INDEX idx_group_members_user_id ON group_members (user_id);
+CREATE INDEX idx_group_members_role ON group_members (role);
+```
+
+#### group_invitations
+```sql
+CREATE TABLE group_invitations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    invited_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_group_invitations_group_id ON group_invitations (group_id);
+CREATE INDEX idx_group_invitations_email ON group_invitations (email);
+CREATE INDEX idx_group_invitations_token ON group_invitations (token);
+CREATE INDEX idx_group_invitations_status ON group_invitations (status);
+CREATE INDEX idx_group_invitations_expires_at ON group_invitations (expires_at);
+```
+
+#### user_group_limits
+```sql
+CREATE TABLE user_group_limits (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    created_groups_count INTEGER DEFAULT 0,
+    max_groups_allowed INTEGER DEFAULT 2, -- Free tier limit
+    plan_type VARCHAR(20) DEFAULT 'free' CHECK (plan_type IN ('free', 'premium')),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_user_group_limits_plan_type ON user_group_limits (plan_type);
 ```
 
 #### notes
@@ -75,7 +128,12 @@ CREATE TABLE notes (
     is_pinned BOOLEAN DEFAULT FALSE,
     version INTEGER DEFAULT 1,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Check that creator is a member of the group
+    CONSTRAINT fk_creator_group_member 
+        FOREIGN KEY (group_id, creator_id) 
+        REFERENCES group_members(group_id, user_id) DEFERRABLE INITIALLY DEFERRED
 );
 
 -- Indexes
@@ -109,6 +167,28 @@ CREATE TABLE assignments (
 -- Indexes
 CREATE INDEX idx_assignments_note_id ON assignments (note_id);
 CREATE INDEX idx_assignments_assignee_id ON assignments (assignee_id);
+
+-- Function to validate assignments are within the same group
+CREATE OR REPLACE FUNCTION validate_assignment_within_group()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Check if assignee is a member of the same group as the note
+    IF NOT EXISTS (
+        SELECT 1 FROM notes n
+        JOIN group_members gm ON n.group_id = gm.group_id
+        WHERE n.id = NEW.note_id AND gm.user_id = NEW.assignee_id
+    ) THEN
+        RAISE EXCEPTION 'Assignee must be a member of the same group as the note';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validate_assignment_within_group
+    BEFORE INSERT OR UPDATE ON assignments
+    FOR EACH ROW
+    EXECUTE FUNCTION validate_assignment_within_group();
 ```
 
 #### comments
@@ -270,14 +350,18 @@ SELECT
     u.id AS user_id,
     u.name,
     u.email,
+    g.id AS group_id,
+    g.name AS group_name,
     COUNT(a.id) AS total_assignments,
     COUNT(CASE WHEN n.status = 'open' THEN 1 END) AS open_assignments,
     COUNT(CASE WHEN n.status = 'in_progress' THEN 1 END) AS in_progress_assignments,
     COUNT(CASE WHEN n.status = 'done' THEN 1 END) AS completed_assignments
 FROM users u
+JOIN group_members gm ON u.id = gm.user_id
+JOIN groups g ON gm.group_id = g.id
 LEFT JOIN assignments a ON u.id = a.assignee_id
-LEFT JOIN notes n ON a.note_id = n.id
-GROUP BY u.id, u.name, u.email;
+LEFT JOIN notes n ON a.note_id = n.id AND n.group_id = g.id
+GROUP BY u.id, u.name, u.email, g.id, g.name;
 ```
 
 #### Group activity summary
@@ -286,17 +370,22 @@ CREATE VIEW group_activity AS
 SELECT 
     g.id AS group_id,
     g.name AS group_name,
-    COUNT(DISTINCT u.id) AS member_count,
+    g.creator_id,
+    u_creator.name AS creator_name,
+    COUNT(DISTINCT gm.user_id) AS member_count,
     COUNT(DISTINCT n.id) AS total_notes,
     COUNT(DISTINCT CASE WHEN n.type = 'task' THEN n.id END) AS total_tasks,
     COUNT(DISTINCT CASE WHEN n.type = 'issue' THEN n.id END) AS total_issues,
     COUNT(DISTINCT c.id) AS total_comments,
-    MAX(n.created_at) AS last_activity
+    MAX(n.created_at) AS last_activity,
+    g.max_members,
+    g.created_at AS group_created_at
 FROM groups g
-LEFT JOIN users u ON g.id = u.group_id
+JOIN users u_creator ON g.creator_id = u_creator.id
+LEFT JOIN group_members gm ON g.id = gm.group_id
 LEFT JOIN notes n ON g.id = n.group_id
 LEFT JOIN comments c ON n.id = c.note_id
-GROUP BY g.id, g.name;
+GROUP BY g.id, g.name, g.creator_id, u_creator.name, g.max_members, g.created_at;
 ```
 
 ## Local Database (SQLite)
@@ -309,9 +398,6 @@ CREATE TABLE users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT NOT NULL,
-    domain TEXT NOT NULL,
-    group_id TEXT NOT NULL,
-    role TEXT NOT NULL,
     avatar_url TEXT,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
@@ -321,8 +407,45 @@ CREATE TABLE users (
 CREATE TABLE groups (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    domain TEXT NOT NULL,
+    description TEXT,
+    avatar_url TEXT,
+    creator_id TEXT NOT NULL,
+    max_members INTEGER DEFAULT 5,
     created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- Group members (cached)
+CREATE TABLE group_members (
+    id TEXT PRIMARY KEY,
+    group_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    joined_at INTEGER NOT NULL,
+    FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(group_id, user_id)
+);
+
+-- Group invitations (cached)
+CREATE TABLE group_invitations (
+    id TEXT PRIMARY KEY,
+    group_id TEXT NOT NULL,
+    invited_by TEXT NOT NULL,
+    email TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    expires_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- User group limits (cached)
+CREATE TABLE user_group_limits (
+    user_id TEXT PRIMARY KEY,
+    created_groups_count INTEGER DEFAULT 0,
+    max_groups_allowed INTEGER DEFAULT 2,
+    plan_type TEXT DEFAULT 'free',
     updated_at INTEGER NOT NULL
 );
 
@@ -433,6 +556,14 @@ CREATE INDEX idx_comments_created_at ON comments (created_at DESC);
 CREATE INDEX idx_assignments_note_id ON assignments (note_id);
 CREATE INDEX idx_assignments_assignee_id ON assignments (assignee_id);
 
+CREATE INDEX idx_group_members_group_id ON group_members (group_id);
+CREATE INDEX idx_group_members_user_id ON group_members (user_id);
+CREATE INDEX idx_group_members_role ON group_members (role);
+
+CREATE INDEX idx_group_invitations_group_id ON group_invitations (group_id);
+CREATE INDEX idx_group_invitations_email ON group_invitations (email);
+CREATE INDEX idx_group_invitations_status ON group_invitations (status);
+
 CREATE INDEX idx_sync_queue_action ON sync_queue (action);
 CREATE INDEX idx_sync_queue_created_at ON sync_queue (created_at);
 
@@ -468,19 +599,41 @@ END;
 
 ### Initial Setup
 ```sql
--- Create admin user for first group
-INSERT INTO groups (id, name, domain) 
-VALUES ('00000000-0000-0000-0000-000000000001', 'Default', 'default.local');
-
-INSERT INTO users (id, name, email, domain, group_id, role, firebase_uid)
+-- Create first user (admin)
+INSERT INTO users (id, name, email, firebase_uid)
 VALUES (
     '00000000-0000-0000-0000-000000000001',
     'Admin User',
-    'admin@default.local',
-    'default.local',
-    '00000000-0000-0000-0000-000000000001',
-    'admin',
+    'admin@noteflow.app',
     'admin-firebase-uid'
+);
+
+-- Initialize user group limits
+INSERT INTO user_group_limits (user_id, created_groups_count, max_groups_allowed, plan_type)
+VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    1,
+    2,
+    'free'
+);
+
+-- Create default group
+INSERT INTO groups (id, name, description, creator_id, max_members) 
+VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'Default Group',
+    'Default group for testing',
+    '00000000-0000-0000-0000-000000000001',
+    5
+);
+
+-- Add admin as group member
+INSERT INTO group_members (id, group_id, user_id, role)
+VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
+    'admin'
 );
 ```
 
@@ -488,9 +641,13 @@ VALUES (
 ```sql
 -- Sample notes
 INSERT INTO notes (id, group_id, creator_id, title, content, type, status) VALUES
-('note-1', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Welcome to NoteFlow', 'This is your first note!', 'note', 'open'),
+('note-1', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Welcome to NoteFlow', 'This is your first note! Welcome to the new group-based system.', 'note', 'open'),
 ('task-1', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Setup project repository', 'Create GitHub repo and initial structure', 'task', 'in_progress'),
 ('issue-1', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Login button not working', 'Users report login button is unresponsive on mobile', 'issue', 'open');
+
+-- Sample assignment
+INSERT INTO assignments (id, note_id, assignee_id) VALUES
+('assign-1', 'task-1', '00000000-0000-0000-0000-000000000001');
 ```
 
 ## Performance Optimization

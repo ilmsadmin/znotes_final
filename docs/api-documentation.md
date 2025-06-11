@@ -35,10 +35,8 @@ type User {
   id: ID!
   name: String!
   email: String!
-  domain: String!
-  groupId: ID!
-  role: UserRole!
   avatarUrl: String
+  groups: [GroupMember!]!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -54,10 +52,69 @@ enum UserRole {
 type Group {
   id: ID!
   name: String!
-  domain: String!
-  members: [User!]!
+  description: String
+  avatarUrl: String
+  creatorId: ID!
+  creator: User!
+  maxMembers: Int!
+  members: [GroupMember!]!
+  memberCount: Int!
+  invitations: [GroupInvitation!]!
   createdAt: DateTime!
   updatedAt: DateTime!
+}
+```
+
+#### GroupMember
+```graphql
+type GroupMember {
+  id: ID!
+  groupId: ID!
+  userId: ID!
+  user: User!
+  group: Group!
+  role: UserRole!
+  joinedAt: DateTime!
+}
+```
+
+#### GroupInvitation
+```graphql
+type GroupInvitation {
+  id: ID!
+  groupId: ID!
+  group: Group!
+  invitedBy: ID!
+  inviter: User!
+  email: String!
+  token: String!
+  status: InvitationStatus!
+  expiresAt: DateTime!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+```
+
+#### UserGroupLimits
+```graphql
+type UserGroupLimits {
+  userId: ID!
+  createdGroupsCount: Int!
+  maxGroupsAllowed: Int!
+  planType: PlanType!
+  updatedAt: DateTime!
+}
+
+enum PlanType {
+  FREE
+  PREMIUM
 }
 ```
 
@@ -174,17 +231,112 @@ query GetMe {
     id
     name
     email
-    domain
-    groupId
-    role
     avatarUrl
+    groups {
+      id
+      group {
+        id
+        name
+        description
+        memberCount
+      }
+      role
+      joinedAt
+    }
+    groupLimits {
+      createdGroupsCount
+      maxGroupsAllowed
+      planType
+    }
   }
 }
 ```
 
-### Get Notes with Filtering
+### Get User's Groups
+```graphql
+query GetMyGroups {
+  myGroups {
+    id
+    group {
+      id
+      name
+      description
+      avatarUrl
+      memberCount
+      maxMembers
+      creator {
+        id
+        name
+      }
+      createdAt
+    }
+    role
+    joinedAt
+  }
+}
+```
+
+### Get Group Details
+```graphql
+query GetGroup($id: ID!) {
+  group(id: $id) {
+    id
+    name
+    description
+    avatarUrl
+    maxMembers
+    memberCount
+    creator {
+      id
+      name
+      avatarUrl
+    }
+    members {
+      id
+      role
+      joinedAt
+      user {
+        id
+        name
+        email
+        avatarUrl
+      }
+    }
+    invitations {
+      id
+      email
+      status
+      expiresAt
+      inviter {
+        id
+        name
+      }
+    }
+    createdAt
+  }
+}
+```
+
+### Get Available Team Members (for assignments)
+```graphql
+query GetTeamMembers($groupId: ID!) {
+  groupMembers(groupId: $groupId) {
+    id
+    user {
+      id
+      name
+      email
+      avatarUrl
+    }
+    role
+  }
+}
+```
+
+### Get Notes with Filtering (Group-based)
 ```graphql
 query GetNotes(
+  $groupId: ID!
   $type: NoteType
   $status: String
   $assignedToMe: Boolean
@@ -193,6 +345,7 @@ query GetNotes(
   $offset: Int = 0
 ) {
   notes(
+    groupId: $groupId
     type: $type
     status: $status
     assignedToMe: $assignedToMe
@@ -290,22 +443,6 @@ query GetNote($id: ID!) {
 }
 ```
 
-### Get Group Members
-```graphql
-query GetGroupMembers {
-  myGroup {
-    id
-    name
-    members {
-      id
-      name
-      email
-      role
-      avatarUrl
-    }
-  }
-}
-```
 
 ### Get Notifications
 ```graphql
@@ -326,6 +463,109 @@ query GetNotifications($unreadOnly: Boolean = false) {
 
 ## Mutations
 
+### Group Management
+
+#### Create Group
+```graphql
+mutation CreateGroup($input: CreateGroupInput!) {
+  createGroup(input: $input) {
+    id
+    name
+    description
+    avatarUrl
+    maxMembers
+    creator {
+      id
+      name
+    }
+    createdAt
+  }
+}
+
+input CreateGroupInput {
+  name: String!
+  description: String
+  avatarUrl: String
+}
+```
+
+#### Update Group
+```graphql
+mutation UpdateGroup($id: ID!, $input: UpdateGroupInput!) {
+  updateGroup(id: $id, input: $input) {
+    id
+    name
+    description
+    avatarUrl
+    updatedAt
+  }
+}
+
+input UpdateGroupInput {
+  name: String
+  description: String
+  avatarUrl: String
+}
+```
+
+#### Invite Members to Group
+```graphql
+mutation InviteMembers($groupId: ID!, $emails: [String!]!) {
+  inviteMembers(groupId: $groupId, emails: $emails) {
+    id
+    email
+    status
+    expiresAt
+    inviter {
+      id
+      name
+    }
+  }
+}
+```
+
+#### Accept Group Invitation
+```graphql
+mutation AcceptInvitation($token: String!) {
+  acceptInvitation(token: $token) {
+    id
+    group {
+      id
+      name
+      description
+    }
+    role
+    joinedAt
+  }
+}
+```
+
+#### Remove Group Member
+```graphql
+mutation RemoveGroupMember($groupId: ID!, $userId: ID!) {
+  removeGroupMember(groupId: $groupId, userId: $userId) {
+    success
+    message
+  }
+}
+```
+
+#### Update Member Role
+```graphql
+mutation UpdateMemberRole($groupId: ID!, $userId: ID!, $role: UserRole!) {
+  updateMemberRole(groupId: $groupId, userId: $userId, role: $role) {
+    id
+    role
+    user {
+      id
+      name
+    }
+  }
+}
+```
+
+### Note Management
+
 ### Create Note
 ```graphql
 mutation CreateNote($input: CreateNoteInput!) {
@@ -340,6 +580,7 @@ mutation CreateNote($input: CreateNoteInput!) {
 }
 
 input CreateNoteInput {
+  groupId: ID!
   title: String!
   content: String!
   type: NoteType!
