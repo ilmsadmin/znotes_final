@@ -4,6 +4,8 @@
 
 Tài liệu này mô tả chi tiết các user flows chính trong ứng dụng NoteFlow, từ onboarding đến các tính năng nâng cao. Mỗi flow được thiết kế để tối ưu trải nghiệm người dùng và đảm bảo hiệu quả công việc.
 
+> **Sync User Flows**: Để hiểu chi tiết về các user flows liên quan đến đồng bộ offline/online, vui lòng tham khảo [Offline/Online Sync Documentation](./offline-online-sync.md).
+
 ## Flow 1: User Onboarding & First Experience
 
 ### 1.1 Registration Flow

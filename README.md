@@ -24,15 +24,27 @@ Một ứng dụng ghi chú và quản lý công việc đa năng, kết hợp g
 ## Tài liệu
 
 Xem thư mục [docs/](./docs/) để biết thêm chi tiết về:
-- [Đặc tả dự án](./docs/NoteFlow.md)
-- [Kiến trúc kỹ thuật](./docs/technical-architecture.md)
-- [API Documentation](./docs/api-documentation.md)
-- [Database Schema](./docs/database-schema.md)
-- [UI/UX Guidelines](./docs/ui-ux-guidelines.md)
-- [Development Roadmap](./docs/development-roadmap.md)
-- [Testing Strategy](./docs/testing-strategy.md)
-- [Security & Privacy](./docs/security-privacy.md)
-- [User Flows](./docs/user-flows.md)
+
+### 📋 Tài liệu cốt lõi
+- [Đặc tả dự án](./docs/NoteFlow.md) - Tổng quan chi tiết về dự án NoteFlow
+- [Kiến trúc kỹ thuật](./docs/technical-architecture.md) - Thiết kế tổng thể hệ thống
+- [API Documentation](./docs/api-documentation.md) - Tài liệu API GraphQL đầy đủ
+- [Database Schema](./docs/database-schema.md) - Thiết kế cơ sở dữ liệu PostgreSQL và SQLite
+
+### 🔄 Tính năng đặc biệt
+- [**Offline/Online Sync**](./docs/offline-online-sync.md) - Tài liệu chi tiết về tính năng đồng bộ offline/online
+- [User Flows](./docs/user-flows.md) - Luồng người dùng chi tiết
+
+### 🎨 Thiết kế & UX
+- [UI/UX Guidelines](./docs/ui-ux-guidelines.md) - Hướng dẫn thiết kế giao diện
+
+### 🚀 Phát triển & Vận hành  
+- [Development Roadmap](./docs/development-roadmap.md) - Lộ trình phát triển dự án
+- [Testing Strategy](./docs/testing-strategy.md) - Chiến lược kiểm thử
+- [Security & Privacy](./docs/security-privacy.md) - Bảo mật và quyền riêng tư
+
+### 📝 Khác
+- [README](./docs/README.md) - Tổng quan thư mục tài liệu
 
 ## Lộ trình phát triển
 
