@@ -13,7 +13,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 ### **1.3 Giá trị độc quyền (USP)**
 - Tích hợp ghi chú, task, và issue tracking trong một giao diện trực quan.
 - Hỗ trợ offline mạnh mẽ với đồng bộ hóa thông minh.
-- Tự động nhóm theo domain email, giảm thời gian thiết lập.
+- Thành viên có thể tạo nhóm, làm việc và quản lý công việc theo nhóm 1 cách tiện lợi.
 - Giao diện đơn giản, thân thiện với người dùng không rành công nghệ.
 
 ## **2. Tính năng chính**
