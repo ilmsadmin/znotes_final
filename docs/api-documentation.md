@@ -4,6 +4,10 @@
 
 NoteFlow API được xây dựng với GraphQL, cung cấp một endpoint duy nhất với khả năng query linh hoạt và type-safe. API hỗ trợ real-time subscriptions và batch operations cho offline sync.
 
+### Entity System
+
+API sử dụng thuật ngữ `entity` thay vì `note` trong các relationships để phản ánh việc comments, assignments, và files có thể được gắn với notes, tasks, hoặc issues. Tất cả đều được lưu trữ trong cùng một bảng và phân biệt bằng trường `type`.
+
 ## Base URL
 ```
 Production: https://api.noteflow.app/graphql
@@ -108,7 +112,7 @@ enum Severity {
 ```graphql
 type Assignment {
   id: ID!
-  noteId: ID!
+  entityId: ID!
   assigneeId: ID!
   assignee: User!
   createdAt: DateTime!
@@ -119,7 +123,7 @@ type Assignment {
 ```graphql
 type Comment {
   id: ID!
-  noteId: ID!
+  entityId: ID!
   userId: ID!
   parentCommentId: ID
   content: String!
@@ -134,7 +138,7 @@ type Comment {
 ```graphql
 type File {
   id: ID!
-  noteId: ID!
+  entityId: ID!
   fileUrl: String!
   fileName: String!
   fileType: String!
@@ -151,7 +155,7 @@ type Notification {
   id: ID!
   userId: ID!
   type: NotificationType!
-  noteId: ID
+  entityId: ID
   message: String!
   read: Boolean!
   createdAt: DateTime!
@@ -401,7 +405,7 @@ mutation AddComment($input: AddCommentInput!) {
 }
 
 input AddCommentInput {
-  noteId: ID!
+  entityId: ID!
   content: String!
   parentCommentId: ID
 }
@@ -409,8 +413,8 @@ input AddCommentInput {
 
 ### Assign Users
 ```graphql
-mutation AssignUsers($noteId: ID!, $userIds: [ID!]!) {
-  assignUsers(noteId: $noteId, userIds: $userIds) {
+mutation AssignUsers($entityId: ID!, $userIds: [ID!]!) {
+  assignUsers(entityId: $entityId, userIds: $userIds) {
     id
     assignee {
       id
@@ -423,8 +427,8 @@ mutation AssignUsers($noteId: ID!, $userIds: [ID!]!) {
 
 ### Upload File
 ```graphql
-mutation UploadFile($noteId: ID!, $file: Upload!) {
-  uploadFile(noteId: $noteId, file: $file) {
+mutation UploadFile($entityId: ID!, $file: Upload!) {
+  uploadFile(entityId: $entityId, file: $file) {
     id
     fileName
     fileUrl
@@ -448,8 +452,8 @@ mutation MarkNotificationAsRead($id: ID!) {
 
 ### Note Updates
 ```graphql
-subscription NoteUpdated($noteId: ID!) {
-  noteUpdated(noteId: $noteId) {
+subscription NoteUpdated($entityId: ID!) {
+  noteUpdated(entityId: $entityId) {
     id
     title
     content
@@ -461,8 +465,8 @@ subscription NoteUpdated($noteId: ID!) {
 
 ### New Comments
 ```graphql
-subscription CommentAdded($noteId: ID!) {
-  commentAdded(noteId: $noteId) {
+subscription CommentAdded($entityId: ID!) {
+  commentAdded(entityId: $entityId) {
     id
     content
     createdAt
@@ -483,9 +487,10 @@ subscription NotificationReceived {
     type
     message
     createdAt
-    note {
+    entity {
       id
       title
+      type
     }
   }
 }
@@ -617,8 +622,8 @@ query GetNotesPaginated($after: String, $first: Int = 20) {
 ### Single File Upload
 ```javascript
 const mutation = `
-  mutation UploadFile($noteId: ID!, $file: Upload!) {
-    uploadFile(noteId: $noteId, file: $file) {
+  mutation UploadFile($entityId: ID!, $file: Upload!) {
+    uploadFile(entityId: $entityId, file: $file) {
       id
       fileName
       fileUrl
@@ -632,7 +637,7 @@ const [uploadFile] = useMutation(mutation);
 const handleFileUpload = (file) => {
   uploadFile({
     variables: {
-      noteId: "note-123",
+      entityId: "note-123",
       file: file
     }
   });

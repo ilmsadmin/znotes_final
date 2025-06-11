@@ -4,6 +4,12 @@
 
 NoteFlow sử dụng PostgreSQL cho server database và SQLite cho local storage trên mobile devices. Thiết kế database được tối ưu cho performance và hỗ trợ offline synchronization.
 
+### Thiết kế Entity System
+
+Hệ thống sử dụng một bảng `notes` thống nhất để lưu trữ tất cả các loại entity: notes, tasks và issues. Chúng được phân biệt bằng trường `type`. 
+
+Các bảng `assignments`, `comments`, `files` và `notifications` sử dụng trường `entity_id` để tham chiếu đến bất kỳ loại entity nào trong bảng `notes`, thay vì sử dụng tên cụ thể như `note_id`. Điều này giúp schema rõ ràng hơn về mặt ngữ nghĩa và dễ hiểu.
+
 ## Server Database (PostgreSQL)
 
 ### Schema Overview
@@ -99,15 +105,15 @@ CREATE INDEX idx_notes_search ON notes USING GIN (
 ```sql
 CREATE TABLE assignments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    entity_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
     assignee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
-    UNIQUE(note_id, assignee_id)
+    UNIQUE(entity_id, assignee_id)
 );
 
 -- Indexes
-CREATE INDEX idx_assignments_note_id ON assignments (note_id);
+CREATE INDEX idx_assignments_entity_id ON assignments (entity_id);
 CREATE INDEX idx_assignments_assignee_id ON assignments (assignee_id);
 ```
 
@@ -115,7 +121,7 @@ CREATE INDEX idx_assignments_assignee_id ON assignments (assignee_id);
 ```sql
 CREATE TABLE comments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    entity_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     parent_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
@@ -126,7 +132,7 @@ CREATE TABLE comments (
 );
 
 -- Indexes
-CREATE INDEX idx_comments_note_id ON comments (note_id);
+CREATE INDEX idx_comments_entity_id ON comments (entity_id);
 CREATE INDEX idx_comments_user_id ON comments (user_id);
 CREATE INDEX idx_comments_parent_id ON comments (parent_comment_id);
 CREATE INDEX idx_comments_created_at ON comments (created_at DESC);
@@ -136,7 +142,7 @@ CREATE INDEX idx_comments_created_at ON comments (created_at DESC);
 ```sql
 CREATE TABLE files (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    entity_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
     file_url TEXT NOT NULL,
     file_name VARCHAR(255) NOT NULL,
     file_type VARCHAR(100) NOT NULL,
@@ -146,7 +152,7 @@ CREATE TABLE files (
 );
 
 -- Indexes
-CREATE INDEX idx_files_note_id ON files (note_id);
+CREATE INDEX idx_files_entity_id ON files (entity_id);
 CREATE INDEX idx_files_uploaded_by ON files (uploaded_by);
 ```
 
@@ -156,7 +162,7 @@ CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL CHECK (type IN ('comment', 'assign', 'deadline', 'mention')),
-    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+    entity_id UUID REFERENCES notes(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
     data JSONB DEFAULT '{}', -- Additional notification data
     read BOOLEAN DEFAULT FALSE,
@@ -276,7 +282,7 @@ SELECT
     COUNT(CASE WHEN n.status = 'done' THEN 1 END) AS completed_assignments
 FROM users u
 LEFT JOIN assignments a ON u.id = a.assignee_id
-LEFT JOIN notes n ON a.note_id = n.id
+LEFT JOIN notes n ON a.entity_id = n.id
 GROUP BY u.id, u.name, u.email;
 ```
 
@@ -295,7 +301,7 @@ SELECT
 FROM groups g
 LEFT JOIN users u ON g.id = u.group_id
 LEFT JOIN notes n ON g.id = n.group_id
-LEFT JOIN comments c ON n.id = c.note_id
+LEFT JOIN comments c ON n.id = c.entity_id
 GROUP BY g.id, g.name;
 ```
 
@@ -352,16 +358,16 @@ CREATE TABLE notes (
 -- Assignments
 CREATE TABLE assignments (
     id TEXT PRIMARY KEY,
-    note_id TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
     assignee_id TEXT NOT NULL,
     created_at INTEGER NOT NULL,
-    FOREIGN KEY(note_id) REFERENCES notes(id) ON DELETE CASCADE
+    FOREIGN KEY(entity_id) REFERENCES notes(id) ON DELETE CASCADE
 );
 
 -- Comments
 CREATE TABLE comments (
     id TEXT PRIMARY KEY,
-    note_id TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
     user_id TEXT NOT NULL,
     parent_comment_id TEXT,
     content TEXT NOT NULL,
@@ -369,13 +375,13 @@ CREATE TABLE comments (
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     local_only INTEGER DEFAULT 0,
-    FOREIGN KEY(note_id) REFERENCES notes(id) ON DELETE CASCADE
+    FOREIGN KEY(entity_id) REFERENCES notes(id) ON DELETE CASCADE
 );
 
 -- Files (metadata only, files stored in app sandbox)
 CREATE TABLE files (
     id TEXT PRIMARY KEY,
-    note_id TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
     file_url TEXT NOT NULL,
     file_name TEXT NOT NULL,
     file_type TEXT NOT NULL,
@@ -383,7 +389,7 @@ CREATE TABLE files (
     uploaded_by TEXT NOT NULL,
     local_path TEXT, -- Local file path if cached
     created_at INTEGER NOT NULL,
-    FOREIGN KEY(note_id) REFERENCES notes(id) ON DELETE CASCADE
+    FOREIGN KEY(entity_id) REFERENCES notes(id) ON DELETE CASCADE
 );
 
 -- Sync queue for offline operations
@@ -427,10 +433,10 @@ CREATE INDEX idx_notes_created_at ON notes (created_at DESC);
 CREATE INDEX idx_notes_updated_at ON notes (updated_at DESC);
 CREATE INDEX idx_notes_local_only ON notes (local_only);
 
-CREATE INDEX idx_comments_note_id ON comments (note_id);
+CREATE INDEX idx_comments_entity_id ON comments (entity_id);
 CREATE INDEX idx_comments_created_at ON comments (created_at DESC);
 
-CREATE INDEX idx_assignments_note_id ON assignments (note_id);
+CREATE INDEX idx_assignments_entity_id ON assignments (entity_id);
 CREATE INDEX idx_assignments_assignee_id ON assignments (assignee_id);
 
 CREATE INDEX idx_sync_queue_action ON sync_queue (action);
@@ -465,6 +471,67 @@ END;
 ```
 
 ## Data Migration Scripts
+
+### Migration: Rename note_id to entity_id
+
+This migration renames the `note_id` fields to `entity_id` in the assignments, comments, files, and notifications tables for better semantic clarity.
+
+```sql
+-- Rename columns in assignments table
+ALTER TABLE assignments RENAME COLUMN note_id TO entity_id;
+
+-- Rename columns in comments table  
+ALTER TABLE comments RENAME COLUMN note_id TO entity_id;
+
+-- Rename columns in files table
+ALTER TABLE files RENAME COLUMN note_id TO entity_id;
+
+-- Rename columns in notifications table
+ALTER TABLE notifications RENAME COLUMN note_id TO entity_id;
+
+-- Update index names for consistency
+DROP INDEX IF EXISTS idx_assignments_note_id;
+CREATE INDEX idx_assignments_entity_id ON assignments (entity_id);
+
+DROP INDEX IF EXISTS idx_comments_note_id;
+CREATE INDEX idx_comments_entity_id ON comments (entity_id);
+
+DROP INDEX IF EXISTS idx_files_note_id;
+CREATE INDEX idx_files_entity_id ON files (entity_id);
+
+-- Recreate views with updated column names
+DROP VIEW IF EXISTS user_assignments;
+CREATE VIEW user_assignments AS
+SELECT 
+    u.id AS user_id,
+    u.name,
+    u.email,
+    COUNT(a.id) AS total_assignments,
+    COUNT(CASE WHEN n.status = 'open' THEN 1 END) AS open_assignments,
+    COUNT(CASE WHEN n.status = 'in_progress' THEN 1 END) AS in_progress_assignments,
+    COUNT(CASE WHEN n.status = 'done' THEN 1 END) AS completed_assignments
+FROM users u
+LEFT JOIN assignments a ON u.id = a.assignee_id
+LEFT JOIN notes n ON a.entity_id = n.id
+GROUP BY u.id, u.name, u.email;
+
+DROP VIEW IF EXISTS group_activity;
+CREATE VIEW group_activity AS
+SELECT 
+    g.id AS group_id,
+    g.name AS group_name,
+    COUNT(DISTINCT u.id) AS member_count,
+    COUNT(DISTINCT n.id) AS total_notes,
+    COUNT(DISTINCT CASE WHEN n.type = 'task' THEN n.id END) AS total_tasks,
+    COUNT(DISTINCT CASE WHEN n.type = 'issue' THEN n.id END) AS total_issues,
+    COUNT(DISTINCT c.id) AS total_comments,
+    MAX(n.created_at) AS last_activity
+FROM groups g
+LEFT JOIN users u ON g.id = u.group_id
+LEFT JOIN notes n ON g.id = n.group_id
+LEFT JOIN comments c ON n.id = c.entity_id
+GROUP BY g.id, g.name;
+```
 
 ### Initial Setup
 ```sql

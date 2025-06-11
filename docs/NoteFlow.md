@@ -113,6 +113,8 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 
 ## **4. Mô hình dữ liệu (Database Schema)**
 
+**Lưu ý**: Hệ thống sử dụng bảng `notes` chung để lưu trữ tất cả các loại entity (note, task, issue) và phân biệt bằng trường `type`. Các bảng liên quan như `assignments`, `comments`, `files`, `notifications` sử dụng trường `entity_id` để tham chiếu đến bất kỳ loại entity nào, thay vì chỉ `note_id` để rõ ràng hơn về mặt ngữ nghĩa.
+
 ### **4.1 users**
 ```json
 {
@@ -162,7 +164,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 ```json
 {
   id: UUID,
-  note_id: UUID,
+  entity_id: UUID, // references notes table (note/task/issue)
   assignee_id: UUID,
   created_at: timestamp
 }
@@ -172,7 +174,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 ```json
 {
   id: UUID,
-  note_id: UUID,
+  entity_id: UUID, // references notes table (note/task/issue)
   user_id: UUID,
   parent_comment_id: UUID, // cho nested comments
   content: text,
@@ -185,7 +187,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
 ```json
 {
   id: UUID,
-  note_id: UUID,
+  entity_id: UUID, // references notes table (note/task/issue)
   file_url: string,
   file_type: string,
   file_size: number,
@@ -200,7 +202,7 @@ NoteFlow là một ứng dụng ghi chú và quản lý công việc đa năng, 
   id: UUID,
   user_id: UUID,
   type: "comment" | "assign" | "deadline",
-  note_id: UUID,
+  entity_id: UUID, // references notes table (note/task/issue)
   message: string,
   read: boolean,
   created_at: timestamp
