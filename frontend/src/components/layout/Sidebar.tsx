@@ -1,6 +1,11 @@
 'use client';
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigationSections = [
     {
       title: 'Workspace',
@@ -36,14 +41,24 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-[280px] bg-white border-r border-gray-200 flex flex-col fixed h-screen overflow-y-auto z-40 lg:block hidden">
+    <div className={`w-[280px] bg-white border-r border-gray-200 flex flex-col fixed h-screen overflow-y-auto z-40 transition-transform duration-300 lg:translate-x-0 ${
+      isOpen ? 'translate-x-0' : '-translate-x-full'
+    } lg:block`}>
       {/* Logo Header */}
       <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-            N
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+              N
+            </div>
+            <span className="text-2xl font-bold text-gray-900">NoteFlow</span>
           </div>
-          <span className="text-2xl font-bold text-gray-900">NoteFlow</span>
+          <button 
+            onClick={onClose}
+            className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
@@ -58,6 +73,7 @@ export default function Sidebar() {
               <a
                 key={item.label}
                 href={item.href}
+                onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium mb-1 transition-all duration-200 ${
                   item.active
                     ? 'bg-blue-100 text-blue-700'
