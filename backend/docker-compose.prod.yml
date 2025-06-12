@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Production
+  postgres:
+    image: postgres:15-alpine
+    container_name: noteflow-postgres-prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-znotes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-znotes123}
+      POSTGRES_DB: ${POSTGRES_DB:-znotes}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - noteflow-prod-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-znotes}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache for Production
+  redis:
+    image: redis:7-alpine
+    container_name: noteflow-redis-prod
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - noteflow-prod-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Backend API for Production
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: noteflow-backend-prod
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-znotes}:${POSTGRES_PASSWORD:-znotes123}@postgres:5432/${POSTGRES_DB:-znotes}?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      NODE_ENV: "production"
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploads_prod_data:/app/uploads
+    networks:
+      - noteflow-prod-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  uploads_prod_data:
+
+networks:
+  noteflow-prod-network:
+    driver: bridge

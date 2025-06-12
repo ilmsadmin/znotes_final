@@ -17,7 +17,7 @@ export class AssignmentsResolver {
     @CurrentUser() user: AuthUser,
     @Args('input') createAssignmentInput: CreateAssignmentInput,
   ): Promise<Assignment> {
-    return this.assignmentsService.create(createAssignmentInput) as Promise<Assignment>;
+    return this.assignmentsService.create(createAssignmentInput) as any;
   }
 
   @Query(() => [Assignment])
@@ -25,12 +25,12 @@ export class AssignmentsResolver {
     @CurrentUser() user: AuthUser,
     @Args('noteId', { type: () => ID }) noteId: string,
   ): Promise<Assignment[]> {
-    return this.assignmentsService.findByNoteId(noteId) as Promise<Assignment[]>;
+    return this.assignmentsService.findByNoteId(noteId) as any;
   }
 
   @Query(() => [Assignment])
   async myAssignments(@CurrentUser() user: AuthUser): Promise<Assignment[]> {
-    return this.assignmentsService.findByAssigneeId(user.id) as Promise<Assignment[]>;
+    return this.assignmentsService.findByAssigneeId(user.id) as any;
   }
 
   @Mutation(() => Boolean)

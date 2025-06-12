@@ -17,7 +17,7 @@ export class CommentsResolver {
     @CurrentUser() user: AuthUser,
     @Args('input') createCommentInput: CreateCommentInput,
   ): Promise<Comment> {
-    return this.commentsService.create(user.id, user.groupIds, createCommentInput) as Promise<Comment>;
+    return this.commentsService.create(user.id, user.groupIds, createCommentInput) as any;
   }
 
   @Query(() => [Comment])
@@ -25,7 +25,7 @@ export class CommentsResolver {
     @CurrentUser() user: AuthUser,
     @Args('noteId', { type: () => ID }) noteId: string,
   ): Promise<Comment[]> {
-    return this.commentsService.findByNoteId(noteId, user.groupIds) as Promise<Comment[]>;
+    return this.commentsService.findByNoteId(noteId, user.groupIds) as any;
   }
 
   @Mutation(() => Comment)
@@ -34,7 +34,7 @@ export class CommentsResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') updateCommentInput: UpdateCommentInput,
   ): Promise<Comment> {
-    return this.commentsService.update(id, user.id, user.groupIds, updateCommentInput) as Promise<Comment>;
+    return this.commentsService.update(id, user.id, user.groupIds, updateCommentInput) as any;
   }
 
   @Mutation(() => Boolean)

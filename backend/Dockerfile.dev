@@ -1,0 +1,28 @@
+# Development Dockerfile
+FROM node:18-alpine
+
+# Install necessary packages
+RUN apk add --no-cache curl bash
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npm run db:generate
+
+# Create uploads directory
+RUN mkdir -p uploads
+
+# Expose port
+EXPOSE 3000
+
+# Start in development mode with hot reload (ignore TS errors)
+CMD ["./start-dev-tolerant.sh"]

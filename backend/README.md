@@ -1,69 +1,132 @@
-# ZNotes Backend
+# NoteFlow Backend
 
-A modern NestJS backend with GraphQL, Prisma ORM, PostgreSQL, and Redis support.
+A modern NestJS backend with GraphQL, Prisma ORM, PostgreSQL, and Redis support for the NoteFlow collaborative note-taking application.
 
-## Features
+## ✨ Features
 
-- **NestJS** - Progressive Node.js framework
+- **NestJS** - Progressive Node.js framework with TypeScript
 - **GraphQL** - Modern API with Apollo Server
-- **Prisma ORM** - Type-safe database access
-- **PostgreSQL** - Robust relational database
-- **Redis** - High-performance caching
-- **Docker** - Containerized deployment
-- **TypeScript** - Type-safe development
+- **Prisma ORM** - Type-safe database access with migrations
+- **PostgreSQL** - Robust relational database with full-text search
+- **Redis** - High-performance caching and session storage
+- **Docker** - Containerized deployment with multi-stage builds
+- **Real-time Sync** - Offline-first architecture with conflict resolution
+- **Authentication** - Firebase Auth integration
+- **File Upload** - Secure file handling with size limits
+- **Rate Limiting** - API protection and abuse prevention
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 18+ 
 - Docker & Docker Compose
-- PostgreSQL (optional, can use Docker)
-- Redis (optional, can use Docker)
+- Git
 
-### Development Setup
+### Option 1: Docker Setup (Recommended)
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
+```bash
+# Clone the repository
+git clone <repository-url>
+cd NoteFlow/backend
 
-2. **Environment setup**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+# Quick setup with Makefile
+make setup
 
-3. **Start services with Docker**
-   ```bash
-   npm run docker:up
-   ```
+# Or manual setup
+cp .env.example .env
+npm install
+make db-only
+make migrate
+npm run start:dev
+```
 
-4. **Generate Prisma client**
-   ```bash
-   npm run db:generate
-   ```
+### Option 2: Full Docker Stack
 
-5. **Push database schema**
-   ```bash
-   npm run db:push
-   ```
+```bash
+# Start everything with Docker
+make dev
 
-6. **Start development server**
-   ```bash
-   npm run start:dev
-   ```
+# View logs
+make logs
 
-### API Endpoints
+# Stop services
+make dev-down
+```
+
+### Option 3: Database Only (Development)
+
+```bash
+# Start only PostgreSQL and Redis
+make db-only
+
+# Install and run backend locally
+npm install
+npm run db:generate
+npm run db:migrate
+npm run start:dev
+```
+
+## 🐳 Docker Commands
+
+### Using Makefile (Recommended)
+
+```bash
+# Development
+make dev                 # Start full development stack
+make dev-down           # Stop development stack
+make logs               # View logs
+
+# Database only
+make db-only            # Start PostgreSQL + Redis only
+make db-down            # Stop database services
+
+# Production
+make prod               # Start production stack
+make prod-build         # Build production images
+make prod-down          # Stop production stack
+
+# Database operations
+make migrate            # Run migrations
+make studio             # Open Prisma Studio
+make backup             # Backup database
+make seed               # Seed database
+
+# Utilities
+make clean              # Clean Docker resources
+make status             # Show service status
+make health             # Check service health
+make setup              # Initial project setup
+```
+
+### Using npm scripts
+
+```bash
+# Development
+npm run docker:up       # Start development stack
+npm run docker:down     # Stop development stack
+npm run docker:logs     # View logs
+
+# Database only (for local development)
+npm run docker:dev:up   # Start database services
+npm run docker:dev:down # Stop database services
+
+# Production
+npm run docker:prod:up    # Start production stack
+npm run docker:prod:down  # Stop production stack
+npm run docker:prod:build # Build production images
+```
+
+## 🌐 API Endpoints
+
+When running locally:
 
 - **REST API**: http://localhost:3000
-  - Health check: `GET /health`
-  - Main: `GET /`
-
 - **GraphQL Playground**: http://localhost:3000/graphql
-  - Interactive GraphQL interface for development
+- **Health Check**: http://localhost:3000/health
+- **Prisma Studio**: http://localhost:5555 (run `make studio`)
 
-### Database Operations
+## 🗄️ Database Management
 
 ```bash
 # Generate Prisma client

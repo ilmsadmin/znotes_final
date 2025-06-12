@@ -1,0 +1,319 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type UserGroupLimits {
+  createdGroupsCount: Float!
+  maxGroupsAllowed: Float!
+  planType: PlanType!
+  updatedAt: DateTime!
+}
+
+enum PlanType {
+  FREE
+  PREMIUM
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  avatarUrl: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  groupMemberships: [GroupMember!]
+  groupLimits: UserGroupLimits
+}
+
+type Group {
+  id: ID!
+  name: String!
+  description: String
+  avatarUrl: String
+  maxMembers: Float!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  creator: User!
+  members: [GroupMember!]!
+  invitations: [GroupInvitation!]
+  memberCount: Float!
+}
+
+type GroupMember {
+  id: ID!
+  role: Role!
+  joinedAt: DateTime!
+  user: User!
+  group: Group!
+}
+
+enum Role {
+  admin
+  member
+}
+
+type GroupInvitation {
+  id: ID!
+  email: String!
+  token: String!
+  status: InvitationStatus!
+  expiresAt: DateTime!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  group: Group!
+  inviter: User!
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+type Note {
+  id: ID!
+  title: String!
+  content: String
+  type: NoteType!
+  status: NoteStatus!
+  priority: Priority
+  severity: Severity
+  deadline: DateTime
+  estimatedTime: Float
+  tags: [String!]!
+  isPinned: Boolean!
+  version: Float!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  creator: User!
+  parent: Note
+  children: [Note!]
+  assignments: [Assignment!]!
+  comments: [Comment!]!
+  files: [File!]!
+}
+
+enum NoteType {
+  note
+  task
+  meeting
+  announcement
+}
+
+enum NoteStatus {
+  open
+  in_progress
+  completed
+  archived
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum Severity {
+  low
+  medium
+  critical
+}
+
+type Assignment {
+  id: ID!
+  createdAt: DateTime!
+  assignee: User!
+  note: Note!
+}
+
+type Comment {
+  id: ID!
+  content: String!
+  mentions: [String!]!
+  version: Float!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  author: User!
+  note: Note!
+  parentComment: Comment
+  replies: [Comment!]
+}
+
+type File {
+  id: ID!
+  fileUrl: String!
+  fileName: String!
+  fileType: String!
+  fileSize: String!
+  createdAt: DateTime!
+  uploader: User!
+  note: Note!
+}
+
+type Notification {
+  id: ID!
+  type: NotificationType!
+  noteId: String
+  message: String!
+  read: Boolean!
+  createdAt: DateTime!
+  user: User!
+  note: Note
+}
+
+enum NotificationType {
+  COMMENT
+  ASSIGN
+  DEADLINE
+  MENTION
+}
+
+type ActivityLog {
+  id: ID!
+  action: String!
+  details: String!
+  createdAt: DateTime!
+  user: User!
+  note: Note
+}
+
+type Query {
+  health: String!
+  databaseHealth: String!
+  redisHealth: String!
+  cacheHealth: String!
+  me: User!
+  user(id: ID!): User
+  usersInGroup(groupId: ID): [User!]!
+  myGroups: [Group!]!
+  myGroup: Group
+  group(id: ID!): Group
+  groupMembers(groupId: ID!): [GroupMember!]!
+  groupStats(groupId: ID): String!
+  notes(filter: NotesFilterInput): [Note!]!
+  note(id: ID!): Note
+  notesByType(type: String!): [Note!]!
+  searchNotes(query: String!): [Note!]!
+  myAssignedNotes: [Note!]!
+  upcomingDeadlines: [Note!]!
+  overdueNotes: [Note!]!
+  groupActivity(limit: Float! = 50, groupId: String): [ActivityLog!]!
+  myActivity(limit: Float! = 20): [ActivityLog!]!
+  noteActivity(noteId: String!): [ActivityLog!]!
+  commentsByNote(noteId: ID!): [Comment!]!
+  assignmentsByNote(noteId: ID!): [Assignment!]!
+  myAssignments: [Assignment!]!
+  notifications(limit: Float = 50, offset: Float = 0): [Notification!]!
+  unreadNotifications: [Notification!]!
+  unreadNotificationCount: Float!
+  initialSync(lastSyncTime: String, tables: String): String!
+  syncQueue: String!
+}
+
+input NotesFilterInput {
+  type: NoteType
+  status: NoteStatus
+  assignedToMe: Boolean
+  search: String
+  limit: Float
+  offset: Float
+}
+
+type Mutation {
+  updateProfile(input: UpdateUserInput!): User!
+  updateLastActive: Boolean!
+  createGroup(input: CreateGroupInput!): Group!
+  updateGroup(id: ID!, input: UpdateGroupInput!): Group!
+  inviteToGroup(input: InviteToGroupInput!): GroupInvitation!
+  acceptGroupInvitation(token: String!): Group!
+  declineGroupInvitation(token: String!): Boolean!
+  removeUserFromGroup(groupId: ID!, userId: ID!): Boolean!
+  updateUserRole(groupId: ID!, userId: ID!, role: String!): Boolean!
+  createNote(input: CreateNoteInput!, groupId: ID): Note!
+  updateNote(id: ID!, input: UpdateNoteInput!): Note!
+  pinNote(id: ID!, isPinned: Boolean!): Note!
+  deleteNote(id: ID!): Boolean!
+  createComment(input: CreateCommentInput!): Comment!
+  updateComment(id: ID!, input: UpdateCommentInput!): Comment!
+  deleteComment(id: ID!): Boolean!
+  createAssignment(input: CreateAssignmentInput!): Assignment!
+  removeAssignment(id: ID!): Boolean!
+  unassignFromNote(noteId: ID!, assigneeId: ID!): Boolean!
+  markNotificationAsRead(id: ID!): Notification!
+  markAllNotificationsAsRead: Boolean!
+  deltaSync(request: String!): String!
+  processSyncQueue: Boolean!
+  addToSyncQueue(tableName: String!, recordId: String!, action: String!, data: String!, clientTimestamp: String!): String!
+}
+
+input UpdateUserInput {
+  name: String
+  avatarUrl: String
+}
+
+input CreateGroupInput {
+  name: String!
+  description: String
+  avatarUrl: String
+  maxMembers: Float
+}
+
+input UpdateGroupInput {
+  name: String
+  description: String
+  avatarUrl: String
+  maxMembers: Float
+}
+
+input InviteToGroupInput {
+  groupId: String!
+  email: String!
+}
+
+input CreateNoteInput {
+  title: String!
+  content: String
+  type: NoteType!
+  parentId: String
+  priority: Priority
+  severity: Severity
+  deadline: String
+  estimatedTime: Float
+  tags: [String!]
+  isPinned: Boolean
+}
+
+input UpdateNoteInput {
+  title: String
+  content: String
+  status: NoteStatus
+  priority: Priority
+  severity: Severity
+  deadline: String
+  estimatedTime: Float
+  tags: [String!]
+  isPinned: Boolean
+}
+
+input CreateCommentInput {
+  noteId: String!
+  content: String!
+  parentCommentId: String
+  mentions: [String!]
+}
+
+input UpdateCommentInput {
+  content: String!
+  mentions: [String!]
+}
+
+input CreateAssignmentInput {
+  noteId: String!
+  assigneeId: String!
+}

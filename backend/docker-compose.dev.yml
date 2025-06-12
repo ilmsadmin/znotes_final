@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database for Development
   postgres:
     image: postgres:15-alpine
-    container_name: znotes-postgres-dev
+    container_name: noteflow-postgres-dev
     environment:
       POSTGRES_USER: znotes
       POSTGRES_PASSWORD: znotes123
@@ -15,43 +15,35 @@ services:
       - postgres_dev_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - znotes-network
+      - noteflow-dev-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U znotes"]
       interval: 30s
       timeout: 10s
       retries: 5
+    restart: unless-stopped
 
-  # Redis Cache
+  # Redis Cache for Development
   redis:
     image: redis:7-alpine
-    container_name: znotes-redis-dev
+    container_name: noteflow-redis-dev
     ports:
       - "6379:6379"
     volumes:
       - redis_dev_data:/data
     networks:
-      - znotes-network
+      - noteflow-dev-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
-
-  # Database services only (for development)
-  db-services:
-    image: hello-world
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: echo "Database services are ready!"
+    restart: unless-stopped
 
 volumes:
   postgres_dev_data:
   redis_dev_data:
 
 networks:
-  znotes-network:
+  noteflow-dev-network:
     driver: bridge

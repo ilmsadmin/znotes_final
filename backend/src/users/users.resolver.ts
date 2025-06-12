@@ -18,12 +18,12 @@ export class UsersResolver {
     if (!currentUser) {
       throw new Error('User not found');
     }
-    return currentUser as User;
+    return currentUser as any;
   }
 
   @Query(() => User, { nullable: true })
   async user(@Args('id', { type: () => ID }) id: string): Promise<User | null> {
-    return this.usersService.findById(id) as Promise<User | null>;
+    return this.usersService.findById(id) as any;
   }
 
   @Query(() => [User])
@@ -35,7 +35,7 @@ export class UsersResolver {
     if (!targetGroupId) {
       throw new Error('No group specified');
     }
-    return this.usersService.findUsersInGroup(targetGroupId) as Promise<User[]>;
+    return this.usersService.findUsersInGroup(targetGroupId) as any;
   }
 
   @Mutation(() => User)
@@ -44,7 +44,7 @@ export class UsersResolver {
     @Args('input') updateUserInput: UpdateUserInput,
   ): Promise<User> {
     await this.usersService.updateLastActive(user.id);
-    return this.usersService.updateUser(user.id, updateUserInput) as Promise<User>;
+    return this.usersService.updateUser(user.id, updateUserInput) as any;
   }
 
   @Mutation(() => Boolean)

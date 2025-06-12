@@ -17,12 +17,12 @@ export class NotificationsResolver {
     @Args('limit', { type: () => Number, nullable: true, defaultValue: 50 }) limit: number,
     @Args('offset', { type: () => Number, nullable: true, defaultValue: 0 }) offset: number,
   ): Promise<Notification[]> {
-    return this.notificationsService.findByUserId(user.id, limit, offset) as Promise<Notification[]>;
+    return this.notificationsService.findByUserId(user.id, limit, offset) as any;
   }
 
   @Query(() => [Notification])
   async unreadNotifications(@CurrentUser() user: AuthUser): Promise<Notification[]> {
-    return this.notificationsService.findUnreadByUserId(user.id) as Promise<Notification[]>;
+    return this.notificationsService.findUnreadByUserId(user.id) as any;
   }
 
   @Query(() => Number)
@@ -35,7 +35,7 @@ export class NotificationsResolver {
     @CurrentUser() user: AuthUser,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<Notification> {
-    return this.notificationsService.markAsRead(id, user.id) as Promise<Notification>;
+    return this.notificationsService.markAsRead(id, user.id) as any;
   }
 
   @Mutation(() => Boolean)

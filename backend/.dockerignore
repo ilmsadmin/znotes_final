@@ -1,0 +1,31 @@
+# .dockerignore
+node_modules
+npm-debug.log
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+README.md
+.nyc_output
+coverage
+.vscode
+.idea
+*.log
+dist
+build
+.DS_Store
+Thumbs.db
+
+# Development files
+*.md
+docs/
+test/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Temporary files
+tmp/
+temp/

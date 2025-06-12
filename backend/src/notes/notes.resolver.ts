@@ -26,7 +26,7 @@ export class NotesResolver {
     if (!targetGroupId) {
       throw new Error('No group specified');
     }
-    return this.notesService.create(user.id, targetGroupId, createNoteInput) as Promise<Note>;
+    return this.notesService.create(user.id, targetGroupId, createNoteInput) as any;
   }
 
   @Query(() => [Note])
@@ -35,7 +35,7 @@ export class NotesResolver {
     @Args('filter', { nullable: true }) filter?: NotesFilterInput,
   ): Promise<Note[]> {
     const filterWithUser = { ...filter, userId: user.id };
-    return this.notesService.findAll(user.groupIds, filterWithUser) as Promise<Note[]>;
+    return this.notesService.findAll(user.groupIds, filterWithUser) as any;
   }
 
   @Query(() => Note, { nullable: true })
@@ -43,7 +43,7 @@ export class NotesResolver {
     @CurrentUser() user: AuthUser,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<Note | null> {
-    return this.notesService.findOne(id, user.groupIds) as Promise<Note | null>;
+    return this.notesService.findOne(id, user.groupIds) as any;
   }
 
   @Query(() => [Note])
@@ -52,7 +52,7 @@ export class NotesResolver {
     @Args('type', { type: () => String }) type: string,
   ): Promise<Note[]> {
     const noteType = type as NoteType;
-    return this.notesService.getByType(user.groupIds, noteType) as Promise<Note[]>;
+    return this.notesService.getByType(user.groupIds, noteType) as any;
   }
 
   @Query(() => [Note])
@@ -60,22 +60,22 @@ export class NotesResolver {
     @CurrentUser() user: AuthUser,
     @Args('query') query: string,
   ): Promise<Note[]> {
-    return this.notesService.search(user.groupIds, query) as Promise<Note[]>;
+    return this.notesService.search(user.groupIds, query) as any;
   }
 
   @Query(() => [Note])
   async myAssignedNotes(@CurrentUser() user: AuthUser): Promise<Note[]> {
-    return this.notesService.getNotesAssignedToUser(user.id, user.groupIds) as Promise<Note[]>;
+    return this.notesService.getNotesAssignedToUser(user.id, user.groupIds) as any;
   }
 
   @Query(() => [Note])
   async upcomingDeadlines(@CurrentUser() user: AuthUser): Promise<Note[]> {
-    return this.notesService.getNotesWithDeadlines(user.groupIds, true) as Promise<Note[]>;
+    return this.notesService.getNotesWithDeadlines(user.groupIds, true) as any;
   }
 
   @Query(() => [Note])
   async overdueNotes(@CurrentUser() user: AuthUser): Promise<Note[]> {
-    return this.notesService.getNotesWithDeadlines(user.groupIds, false) as Promise<Note[]>;
+    return this.notesService.getNotesWithDeadlines(user.groupIds, false) as any;
   }
 
   @Mutation(() => Note)
@@ -84,7 +84,7 @@ export class NotesResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') updateNoteInput: UpdateNoteInput,
   ): Promise<Note> {
-    return this.notesService.update(id, user.id, user.groupIds, updateNoteInput) as Promise<Note>;
+    return this.notesService.update(id, user.id, user.groupIds, updateNoteInput) as any;
   }
 
   @Mutation(() => Note)
@@ -93,7 +93,7 @@ export class NotesResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('isPinned', { type: () => Boolean }) isPinned: boolean,
   ): Promise<Note> {
-    return this.notesService.updateNotePinStatus(id, user.id, user.groupIds, isPinned) as Promise<Note>;
+    return this.notesService.updateNotePinStatus(id, user.id, user.groupIds, isPinned) as any;
   }
 
   @Mutation(() => Boolean)

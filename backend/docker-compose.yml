@@ -4,7 +4,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: znotes-postgres
+    container_name: noteflow-postgres
     environment:
       POSTGRES_USER: znotes
       POSTGRES_PASSWORD: znotes123
@@ -15,25 +15,37 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - znotes-network
+      - noteflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U znotes"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
 
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: znotes-redis
+    container_name: noteflow-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - znotes-network
+      - noteflow-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
 
   # Backend API
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: znotes-backend
+      dockerfile: Dockerfile.dev
+    container_name: noteflow-backend
     ports:
       - "3000:3000"
     environment:
@@ -42,20 +54,28 @@ services:
       NODE_ENV: "development"
       PORT: "3000"
       JWT_SECRET: "your-super-secret-jwt-key-change-in-production"
+      JWT_EXPIRES_IN: "7d"
+      CORS_ORIGIN: "http://localhost:3001,http://localhost:3000"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - .:/app
       - /app/node_modules
+      - uploads_data:/app/uploads
     networks:
-      - znotes-network
-    command: npm run start:dev
+      - noteflow-network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
 
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:
 
 networks:
-  znotes-network:
+  noteflow-network:
     driver: bridge

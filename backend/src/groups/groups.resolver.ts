@@ -15,12 +15,12 @@ export class GroupsResolver {
 
   @Query(() => [Group])
   async myGroups(@CurrentUser() user: AuthUser): Promise<Group[]> {
-    return this.groupsService.getUserGroups(user.id) as Promise<Group[]>;
+    return this.groupsService.getUserGroups(user.id) as any;
   }
 
   @Query(() => Group, { nullable: true })
   async myGroup(@CurrentUser() user: AuthUser): Promise<Group | null> {
-    return this.groupsService.getUserPrimaryGroup(user.id) as Promise<Group | null>;
+    return this.groupsService.getUserPrimaryGroup(user.id) as any;
   }
 
   @Query(() => Group, { nullable: true })
@@ -36,7 +36,7 @@ export class GroupsResolver {
       return null;
     }
     
-    return this.groupsService.findById(id) as Promise<Group | null>;
+    return this.groupsService.findById(id) as any;
   }
 
   @Query(() => [GroupMember])
@@ -52,7 +52,7 @@ export class GroupsResolver {
       throw new Error('Access denied');
     }
 
-    return this.groupsService.getGroupMembers(groupId) as Promise<GroupMember[]>;
+    return this.groupsService.getGroupMembers(groupId) as any;
   }
 
   @Mutation(() => Group)
@@ -60,7 +60,7 @@ export class GroupsResolver {
     @CurrentUser() user: AuthUser,
     @Args('input') createGroupInput: CreateGroupInput,
   ): Promise<Group> {
-    return this.groupsService.createGroup(user.id, createGroupInput) as Promise<Group>;
+    return this.groupsService.createGroup(user.id, createGroupInput) as any;
   }
 
   @Mutation(() => Group)
@@ -69,7 +69,7 @@ export class GroupsResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') updateGroupInput: UpdateGroupInput,
   ): Promise<Group> {
-    return this.groupsService.updateGroup(id, user.id, updateGroupInput) as Promise<Group>;
+    return this.groupsService.updateGroup(id, user.id, updateGroupInput) as any;
   }
 
   @Mutation(() => GroupInvitation)
@@ -77,7 +77,7 @@ export class GroupsResolver {
     @CurrentUser() user: AuthUser,
     @Args('input') inviteInput: InviteToGroupInput,
   ): Promise<GroupInvitation> {
-    return this.groupsService.inviteToGroup(user.id, inviteInput) as Promise<GroupInvitation>;
+    return this.groupsService.inviteToGroup(user.id, inviteInput) as any;
   }
 
   @Mutation(() => Group)
@@ -85,7 +85,7 @@ export class GroupsResolver {
     @CurrentUser() user: AuthUser,
     @Args('token') token: string,
   ): Promise<Group> {
-    return this.groupsService.acceptInvitation(token, user.id) as Promise<Group>;
+    return this.groupsService.acceptInvitation(token, user.id) as any;
   }
 
   @Mutation(() => Boolean)

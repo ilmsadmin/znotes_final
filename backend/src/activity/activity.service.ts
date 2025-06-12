@@ -26,12 +26,16 @@ export class ActivityService {
     return this.prisma.activityLog.findMany({
       where: {
         user: {
-          groupId,
+          groupMemberships: {
+            some: {
+              groupId,
+            },
+          },
         },
       },
       include: {
         user: {
-          include: { group: true },
+          include: { groupMemberships: { include: { group: true } } },
         },
         note: true,
       },
@@ -47,7 +51,7 @@ export class ActivityService {
       where: { userId },
       include: {
         user: {
-          include: { group: true },
+          include: { groupMemberships: { include: { group: true } } },
         },
         note: true,
       },
@@ -63,7 +67,7 @@ export class ActivityService {
       where: { noteId },
       include: {
         user: {
-          include: { group: true },
+          include: { groupMemberships: { include: { group: true } } },
         },
         note: true,
       },

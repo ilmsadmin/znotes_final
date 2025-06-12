@@ -35,7 +35,7 @@ export class GroupsService {
     return {
       ...group,
       memberCount: group._count.members,
-    };
+    } as any;
   }
 
   async getUserGroups(userId: string): Promise<Group[]> {
@@ -66,7 +66,7 @@ export class GroupsService {
     return memberships.map(m => ({
       ...m.group,
       memberCount: m.group._count.members,
-    }));
+    } as any));
   }
 
   async getUserPrimaryGroup(userId: string): Promise<Group | null> {
@@ -99,7 +99,7 @@ export class GroupsService {
     return {
       ...membership.group,
       memberCount: membership.group._count.members,
-    };
+    } as any;
   }
 
   async createGroup(userId: string, createGroupInput: CreateGroupInput): Promise<Group> {

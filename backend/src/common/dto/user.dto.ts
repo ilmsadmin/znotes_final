@@ -14,6 +14,21 @@ registerEnumType(PlanType, {
 });
 
 @ObjectType()
+export class UserGroupLimits {
+  @Field()
+  createdGroupsCount: number;
+
+  @Field()
+  maxGroupsAllowed: number;
+
+  @Field(() => PlanType)
+  planType: PlanType;
+
+  @Field()
+  updatedAt: Date;
+}
+
+@ObjectType()
 export class User {
   @Field(() => ID)
   id: string;
@@ -25,7 +40,7 @@ export class User {
   email: string;
 
   @Field({ nullable: true })
-  avatarUrl?: string;
+  avatarUrl: string | null;
 
   @Field()
   createdAt: Date;
@@ -34,10 +49,10 @@ export class User {
   updatedAt: Date;
 
   @Field(() => [GroupMember], { nullable: true })
-  groupMemberships?: GroupMember[];
+  groupMemberships: GroupMember[] | null;
 
   @Field(() => UserGroupLimits, { nullable: true })
-  groupLimits?: UserGroupLimits;
+  groupLimits: UserGroupLimits | null;
 }
 
 @ObjectType()
@@ -49,10 +64,10 @@ export class Group {
   name: string;
 
   @Field({ nullable: true })
-  description?: string;
+  description: string | null;
 
   @Field({ nullable: true })
-  avatarUrl?: string;
+  avatarUrl: string | null;
 
   @Field()
   maxMembers: number;
@@ -122,19 +137,4 @@ export class GroupInvitation {
 
   @Field(() => User)
   inviter: User;
-}
-
-@ObjectType()
-export class UserGroupLimits {
-  @Field()
-  createdGroupsCount: number;
-
-  @Field()
-  maxGroupsAllowed: number;
-
-  @Field(() => PlanType)
-  planType: PlanType;
-
-  @Field()
-  updatedAt: Date;
 }
