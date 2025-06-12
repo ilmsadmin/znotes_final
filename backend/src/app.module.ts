@@ -14,6 +14,9 @@ import { GroupsModule } from './groups/groups.module';
 import { NotesModule } from './notes/notes.module';
 import { CommentsModule } from './comments/comments.module';
 import { ActivityModule } from './activity/activity.module';
+import { AssignmentsModule } from './assignments/assignments.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { SyncModule } from './sync/sync.module';
 import { join } from 'path';
 
 @Module({
@@ -52,6 +55,9 @@ import { join } from 'path';
     NotesModule,
     CommentsModule,
     ActivityModule,
+    AssignmentsModule,
+    NotificationsModule,
+    SyncModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -11,17 +11,24 @@ datasource db {
 }
 
 model Group {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @db.VarChar(255)
-  domain    String   @unique @db.VarChar(255)
-  settings  Json     @default("{}")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?
+  avatarUrl   String?  @map("avatar_url")
+  creatorId   String   @map("creator_id") @db.Uuid
+  maxMembers  Int      @default(5) @map("max_members")
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
-  users User[]
-  notes Note[]
+  creator     User            @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  members     GroupMember[]
+  invitations GroupInvitation[]
+  notes       Note[]
 
+  @@index([creatorId])
+  @@index([name])
   @@map("groups")
 }
 
@@ -29,9 +36,6 @@ model User {
   id          String    @id @default(uuid()) @db.Uuid
   name        String    @db.VarChar(255)
   email       String    @unique @db.VarChar(255)
-  domain      String    @db.VarChar(255)
-  groupId     String    @map("group_id") @db.Uuid
-  role        Role      @default(member)
   avatarUrl   String?   @map("avatar_url")
   firebaseUid String    @unique @map("firebase_uid") @db.VarChar(255)
   lastActive  DateTime? @map("last_active") @db.Timestamptz
@@ -39,64 +43,175 @@ model User {
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
-  group            Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  notesCreated     Note[]      @relation("NoteCreator")
+  groupsCreated    Group[]           @relation("GroupCreator")
+  groupMemberships GroupMember[]
+  groupLimits      UserGroupLimits?
+  notesCreated     Note[]            @relation("NoteCreator")
+  assignments      Assignment[]
   comments         Comment[]
   filesUploaded    File[]
+  notifications    Notification[]
   activityLogs     ActivityLog[]
-  syncLogsAsUser   SyncLog[]   @relation("SyncLogUser")
+  syncLogsAsUser   SyncLog[]         @relation("SyncLogUser")
+  syncQueue               SyncQueue[]
+  invitationsSent         GroupInvitation[]    @relation("GroupInviter")
+  notesLastModified       Note[]               @relation("NoteLastModifier")
+  commentsLastModified    Comment[]            @relation("CommentLastModifier")
 
   @@index([email])
-  @@index([domain])
-  @@index([groupId])
   @@index([firebaseUid])
   @@map("users")
 }
 
-model Note {
-  id        String     @id @default(uuid()) @db.Uuid
-  groupId   String     @map("group_id") @db.Uuid
-  creatorId String     @map("creator_id") @db.Uuid
-  title     String     @db.VarChar(500)
-  content   String?
-  type      NoteType   @default(note)
-  status    NoteStatus @default(open)
-  metadata  Json       @default("{}")
-  version   Int        @default(1)
-  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+model GroupMember {
+  id       String   @id @default(uuid()) @db.Uuid
+  groupId  String   @map("group_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  role     Role     @default(member)
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz
 
   // Relations
-  group        Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  creator      User          @relation("NoteCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  comments     Comment[]
-  files        File[]
-  activityLogs ActivityLog[]
-  syncLogs     SyncLog[]
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([role])
+  @@map("group_members")
+}
+
+model GroupInvitation {
+  id        String           @id @default(uuid()) @db.Uuid
+  groupId   String           @map("group_id") @db.Uuid
+  invitedBy String           @map("invited_by") @db.Uuid
+  email     String           @db.VarChar(255)
+  token     String           @unique @db.VarChar(255)
+  status    InvitationStatus @default(PENDING)
+  expiresAt DateTime         @map("expires_at") @db.Timestamptz
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  inviter User  @relation("GroupInviter", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("group_invitations")
+}
+
+model UserGroupLimits {
+  userId              String   @id @map("user_id") @db.Uuid
+  createdGroupsCount  Int      @default(0) @map("created_groups_count")
+  maxGroupsAllowed    Int      @default(2) @map("max_groups_allowed")
+  planType            PlanType @default(FREE) @map("plan_type")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([planType])
+  @@map("user_group_limits")
+}
+
+model Note {
+  id               String     @id @default(uuid()) @db.Uuid
+  groupId          String     @map("group_id") @db.Uuid
+  creatorId        String     @map("creator_id") @db.Uuid
+  parentId         String?    @map("parent_id") @db.Uuid
+  title            String     @db.VarChar(500)
+  content          String?
+  type             NoteType   @default(note)
+  status           NoteStatus @default(open)
+  priority         Priority?
+  severity         Severity?
+  deadline         DateTime?  @db.Timestamptz
+  estimatedTime    Int?       @map("estimated_time") // in hours
+  tags             String[]   @default([])
+  isPinned         Boolean    @default(false) @map("is_pinned")
+  
+  // Sync metadata for offline/online synchronization
+  version          Int        @default(1)
+  contentHash      String?    @map("content_hash") @db.VarChar(64)
+  lastModifiedBy   String?    @map("last_modified_by") @db.Uuid
+  conflictData     Json?      @map("conflict_data")
+  
+  metadata         Json       @default("{}")
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  group           Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  creator         User          @relation("NoteCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  parent          Note?         @relation("NoteParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Note[]        @relation("NoteParent")
+  lastModifier    User?         @relation("NoteLastModifier", fields: [lastModifiedBy], references: [id])
+  assignments     Assignment[]
+  comments        Comment[]
+  files           File[]
+  notifications   Notification[]
+  activityLogs    ActivityLog[]
+  syncLogs        SyncLog[]
 
   @@index([groupId])
   @@index([creatorId])
+  @@index([parentId])
   @@index([type])
   @@index([status])
+  @@index([deadline])
   @@index([createdAt])
+  @@index([updatedAt])
   @@map("notes")
 }
 
-model Comment {
-  id        String   @id @default(uuid()) @db.Uuid
-  noteId    String   @map("note_id") @db.Uuid
-  authorId  String   @map("author_id") @db.Uuid
-  content   String
-  metadata  Json     @default("{}")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+model Assignment {
+  id         String   @id @default(uuid()) @db.Uuid
+  noteId     String   @map("note_id") @db.Uuid
+  assigneeId String   @map("assignee_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
-  note   Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  note     Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  assignee User @relation(fields: [assigneeId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, assigneeId])
+  @@index([noteId])
+  @@index([assigneeId])
+  @@map("assignments")
+}
+
+model Comment {
+  id                String   @id @default(uuid()) @db.Uuid
+  noteId            String   @map("note_id") @db.Uuid
+  authorId          String   @map("author_id") @db.Uuid
+  parentCommentId   String?  @map("parent_comment_id") @db.Uuid
+  content           String
+  mentions          String[] @default([]) @db.Uuid // User IDs mentioned in comment
+  
+  // Sync metadata for offline/online synchronization
+  version           Int      @default(1)
+  contentHash       String?  @map("content_hash") @db.VarChar(64)
+  lastModifiedBy    String?  @map("last_modified_by") @db.Uuid
+  
+  metadata          Json     @default("{}")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  note           Note      @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  author         User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentComment  Comment?  @relation("CommentParent", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies        Comment[] @relation("CommentParent")
+  lastModifier   User?     @relation("CommentLastModifier", fields: [lastModifiedBy], references: [id])
 
   @@index([noteId])
   @@index([authorId])
+  @@index([parentCommentId])
+  @@index([createdAt])
   @@map("comments")
 }
 
@@ -117,6 +232,27 @@ model File {
   @@index([noteId])
   @@index([uploadedBy])
   @@map("files")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  noteId    String?          @map("note_id") @db.Uuid
+  message   String
+  data      Json             @default("{}")
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note Note? @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@index([userId, read, createdAt])
+  @@map("notifications")
 }
 
 model ActivityLog {
@@ -161,6 +297,32 @@ model SyncLog {
   @@map("sync_log")
 }
 
+model SyncQueue {
+  id              String         @id @default(uuid()) @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  tableName       String         @map("table_name") @db.VarChar(50)
+  recordId        String         @map("record_id") @db.Uuid
+  action          SyncAction
+  data            Json
+  clientTimestamp DateTime       @map("client_timestamp") @db.Timestamptz
+  retryCount      Int            @default(0) @map("retry_count")
+  status          SyncStatus     @default(PENDING)
+  errorMessage    String?        @map("error_message")
+  dependsOn       String?        @map("depends_on") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dependency     SyncQueue? @relation("SyncDependency", fields: [dependsOn], references: [id])
+  dependentItems SyncQueue[] @relation("SyncDependency")
+
+  @@index([userId])
+  @@index([status])
+  @@index([dependsOn])
+  @@index([tableName, recordId])
+  @@map("sync_queue")
+}
+
 // Enums
 enum Role {
   admin
@@ -179,4 +341,48 @@ enum NoteStatus {
   in_progress
   completed
   archived
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum Severity {
+  low
+  medium
+  critical
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum PlanType {
+  FREE
+  PREMIUM
+}
+
+enum NotificationType {
+  COMMENT
+  ASSIGN
+  DEADLINE
+  MENTION
+}
+
+enum SyncAction {
+  create
+  update
+  delete
+}
+
+enum SyncStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

@@ -3,33 +3,39 @@ import { UseGuards } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { AuthUser } from '../auth/auth.service';
+import { AuthUser, AuthService } from '../auth/auth.service';
 import { Note } from '../common/dto/note.dto';
-import { CreateNoteInput, UpdateNoteInput } from '../common/dto/input.dto';
+import { CreateNoteInput, UpdateNoteInput, NotesFilterInput } from '../common/dto/input.dto';
 import { NoteType, NoteStatus } from '../common/types/prisma.types';
 
 @Resolver(() => Note)
 @UseGuards(AuthGuard)
 export class NotesResolver {
-  constructor(private notesService: NotesService) {}
+  constructor(
+    private notesService: NotesService,
+    private authService: AuthService,
+  ) {}
 
   @Mutation(() => Note)
   async createNote(
     @CurrentUser() user: AuthUser,
     @Args('input') createNoteInput: CreateNoteInput,
+    @Args('groupId', { type: () => ID, nullable: true }) groupId?: string,
   ): Promise<Note> {
-    return this.notesService.create(user.id, user.groupId, createNoteInput) as Promise<Note>;
+    const targetGroupId = groupId || user.primaryGroupId;
+    if (!targetGroupId) {
+      throw new Error('No group specified');
+    }
+    return this.notesService.create(user.id, targetGroupId, createNoteInput) as Promise<Note>;
   }
 
   @Query(() => [Note])
   async notes(
     @CurrentUser() user: AuthUser,
-    @Args('type', { type: () => String, nullable: true }) type?: string,
-    @Args('status', { type: () => String, nullable: true }) status?: string,
+    @Args('filter', { nullable: true }) filter?: NotesFilterInput,
   ): Promise<Note[]> {
-    const noteType = type as NoteType | undefined;
-    const noteStatus = status as NoteStatus | undefined;
-    return this.notesService.findAll(user.groupId, noteType, noteStatus) as Promise<Note[]>;
+    const filterWithUser = { ...filter, userId: user.id };
+    return this.notesService.findAll(user.groupIds, filterWithUser) as Promise<Note[]>;
   }
 
   @Query(() => Note, { nullable: true })
@@ -37,7 +43,7 @@ export class NotesResolver {
     @CurrentUser() user: AuthUser,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<Note | null> {
-    return this.notesService.findOne(id, user.groupId) as Promise<Note | null>;
+    return this.notesService.findOne(id, user.groupIds) as Promise<Note | null>;
   }
 
   @Query(() => [Note])
@@ -46,7 +52,7 @@ export class NotesResolver {
     @Args('type', { type: () => String }) type: string,
   ): Promise<Note[]> {
     const noteType = type as NoteType;
-    return this.notesService.getByType(user.groupId, noteType) as Promise<Note[]>;
+    return this.notesService.getByType(user.groupIds, noteType) as Promise<Note[]>;
   }
 
   @Query(() => [Note])
@@ -54,7 +60,22 @@ export class NotesResolver {
     @CurrentUser() user: AuthUser,
     @Args('query') query: string,
   ): Promise<Note[]> {
-    return this.notesService.search(user.groupId, query) as Promise<Note[]>;
+    return this.notesService.search(user.groupIds, query) as Promise<Note[]>;
+  }
+
+  @Query(() => [Note])
+  async myAssignedNotes(@CurrentUser() user: AuthUser): Promise<Note[]> {
+    return this.notesService.getNotesAssignedToUser(user.id, user.groupIds) as Promise<Note[]>;
+  }
+
+  @Query(() => [Note])
+  async upcomingDeadlines(@CurrentUser() user: AuthUser): Promise<Note[]> {
+    return this.notesService.getNotesWithDeadlines(user.groupIds, true) as Promise<Note[]>;
+  }
+
+  @Query(() => [Note])
+  async overdueNotes(@CurrentUser() user: AuthUser): Promise<Note[]> {
+    return this.notesService.getNotesWithDeadlines(user.groupIds, false) as Promise<Note[]>;
   }
 
   @Mutation(() => Note)
@@ -63,7 +84,16 @@ export class NotesResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') updateNoteInput: UpdateNoteInput,
   ): Promise<Note> {
-    return this.notesService.update(id, user.id, user.groupId, updateNoteInput) as Promise<Note>;
+    return this.notesService.update(id, user.id, user.groupIds, updateNoteInput) as Promise<Note>;
+  }
+
+  @Mutation(() => Note)
+  async pinNote(
+    @CurrentUser() user: AuthUser,
+    @Args('id', { type: () => ID }) id: string,
+    @Args('isPinned', { type: () => Boolean }) isPinned: boolean,
+  ): Promise<Note> {
+    return this.notesService.updateNotePinStatus(id, user.id, user.groupIds, isPinned) as Promise<Note>;
   }
 
   @Mutation(() => Boolean)
@@ -71,6 +101,6 @@ export class NotesResolver {
     @CurrentUser() user: AuthUser,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<boolean> {
-    return this.notesService.remove(id, user.id, user.groupId);
+    return this.notesService.remove(id, user.id, user.groupIds);
   }
 }

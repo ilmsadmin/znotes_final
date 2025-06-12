@@ -11,7 +11,12 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: { id },
       include: {
-        group: true,
+        groupMemberships: {
+          include: {
+            group: true,
+          },
+        },
+        groupLimits: true,
       },
     });
   }
@@ -20,7 +25,12 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: { email },
       include: {
-        group: true,
+        groupMemberships: {
+          include: {
+            group: true,
+          },
+        },
+        groupLimits: true,
       },
     });
   }
@@ -29,7 +39,12 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: { firebaseUid },
       include: {
-        group: true,
+        groupMemberships: {
+          include: {
+            group: true,
+          },
+        },
+        groupLimits: true,
       },
     });
   }
@@ -44,21 +59,37 @@ export class UsersService {
       where: { id },
       data: updateUserInput,
       include: {
-        group: true,
+        groupMemberships: {
+          include: {
+            group: true,
+          },
+        },
+        groupLimits: true,
       },
     });
   }
 
   async findUsersInGroup(groupId: string): Promise<User[]> {
-    return this.prisma.user.findMany({
+    const groupMembers = await this.prisma.groupMember.findMany({
       where: { groupId },
       include: {
-        group: true,
+        user: {
+          include: {
+            groupMemberships: {
+              include: {
+                group: true,
+              },
+            },
+            groupLimits: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: 'asc',
+        joinedAt: 'asc',
       },
     });
+
+    return groupMembers.map(gm => gm.user);
   }
 
   async updateLastActive(id: string): Promise<void> {
