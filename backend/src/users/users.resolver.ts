@@ -27,8 +27,15 @@ export class UsersResolver {
   }
 
   @Query(() => [User])
-  async usersInGroup(@CurrentUser() user: AuthUser): Promise<User[]> {
-    return this.usersService.findUsersInGroup(user.groupId) as Promise<User[]>;
+  async usersInGroup(
+    @CurrentUser() user: AuthUser,
+    @Args('groupId', { type: () => ID, nullable: true }) groupId?: string,
+  ): Promise<User[]> {
+    const targetGroupId = groupId || user.primaryGroupId;
+    if (!targetGroupId) {
+      throw new Error('No group specified');
+    }
+    return this.usersService.findUsersInGroup(targetGroupId) as Promise<User[]>;
   }
 
   @Mutation(() => User)
