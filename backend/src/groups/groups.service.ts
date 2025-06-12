@@ -8,7 +8,7 @@ export class GroupsService {
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<Group | null> {
-    return this.prisma.group.findUnique({
+    const group = await this.prisma.group.findUnique({
       where: { id },
       include: {
         creator: true,
@@ -29,6 +29,13 @@ export class GroupsService {
         },
       },
     });
+
+    if (!group) return null;
+
+    return {
+      ...group,
+      memberCount: group._count.members,
+    };
   }
 
   async getUserGroups(userId: string): Promise<Group[]> {
@@ -56,7 +63,10 @@ export class GroupsService {
       },
     });
 
-    return memberships.map(m => m.group);
+    return memberships.map(m => ({
+      ...m.group,
+      memberCount: m.group._count.members,
+    }));
   }
 
   async getUserPrimaryGroup(userId: string): Promise<Group | null> {
@@ -84,7 +94,12 @@ export class GroupsService {
       },
     });
 
-    return membership?.group || null;
+    if (!membership) return null;
+
+    return {
+      ...membership.group,
+      memberCount: membership.group._count.members,
+    };
   }
 
   async createGroup(userId: string, createGroupInput: CreateGroupInput): Promise<Group> {
@@ -110,19 +125,6 @@ export class GroupsService {
         creatorId: userId,
         maxMembers: createGroupInput.maxMembers || 5,
       },
-      include: {
-        creator: true,
-        members: {
-          include: {
-            user: true,
-          },
-        },
-        _count: {
-          select: {
-            members: true,
-          },
-        },
-      },
     });
 
     // Add creator as admin member
@@ -142,7 +144,11 @@ export class GroupsService {
       },
     });
 
-    return this.findById(group.id);
+    const result = await this.findById(group.id);
+    if (!result) {
+      throw new Error('Failed to retrieve created group');
+    }
+    return result;
   }
 
   async updateGroup(groupId: string, userId: string, updateGroupInput: UpdateGroupInput): Promise<Group> {
@@ -163,22 +169,13 @@ export class GroupsService {
     const updatedGroup = await this.prisma.group.update({
       where: { id: groupId },
       data: updateGroupInput,
-      include: {
-        creator: true,
-        members: {
-          include: {
-            user: true,
-          },
-        },
-        _count: {
-          select: {
-            members: true,
-          },
-        },
-      },
     });
 
-    return updatedGroup;
+    const result = await this.findById(updatedGroup.id);
+    if (!result) {
+      throw new Error('Failed to retrieve updated group');
+    }
+    return result;
   }
 
   async inviteToGroup(userId: string, inviteInput: InviteToGroupInput): Promise<any> {

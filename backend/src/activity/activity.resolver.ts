@@ -42,8 +42,10 @@ export class ActivityResolver {
     
     // Filter to only show activities from the user's groups
     return activities.filter(activity => 
-      activity.user && user.groupIds.some(groupId => 
-        activity.user.groupMemberships?.some(gm => gm.groupId === groupId)
+      activity.user && 
+      activity.user.groupMemberships &&
+      user.groupIds.some(groupId => 
+        activity.user!.groupMemberships!.some(gm => gm.groupId === groupId)
       )
     ) as ActivityLog[];
   }

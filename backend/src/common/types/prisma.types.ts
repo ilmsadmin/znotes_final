@@ -90,6 +90,7 @@ export interface Group {
   members?: GroupMember[];
   invitations?: GroupInvitation[];
   notes?: Note[];
+  memberCount?: number; // Computed field
 }
 
 export interface GroupMember {
