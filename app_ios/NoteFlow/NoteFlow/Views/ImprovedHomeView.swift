@@ -271,7 +271,10 @@ struct ImprovedHomeView: View {
     
     private var issuesContent: some View {
         ForEach(MockData.shared.sampleIssues, id: \.id) { issue in
-            ImprovedIssueCardView(issue: issue, viewMode: selectedView)
+            NavigationLink(destination: IssueDetailView(issue: createNoteFromMockNote(issue))) {
+                ImprovedIssueCardView(issue: issue, viewMode: selectedView)
+            }
+            .buttonStyle(PlainButtonStyle())
         }
     }
     
@@ -343,6 +346,17 @@ struct ImprovedHomeView: View {
                         .fill(backgroundColor)
                 )
         }
+    }
+    
+    // MARK: - Helper Functions
+    private func createNoteFromMockNote(_ mockNote: MockNote) -> Note {
+        let note = Note(
+            title: mockNote.title,
+            content: mockNote.content,
+            tags: mockNote.tags,
+            type: mockNote.type == .issue ? .issue : .note
+        )
+        return note
     }
 }
 

@@ -139,38 +139,39 @@ struct KanbanTaskCard: View {
     let task: MockTask
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header with priority
-            HStack {
-                Circle()
-                    .fill(task.priority.color)
-                    .frame(width: 8, height: 8)
-                
-                Text(task.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
-                
-                Spacer()
-                
-                Menu {
-                    Button("Edit") { }
-                    Button("Move") { }
-                    Button("Delete", role: .destructive) { }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+        NavigationLink(destination: TaskDetailView(task: createTaskFromMockTask(task))) {
+            VStack(alignment: .leading, spacing: 12) {
+                // Header with priority
+                HStack {
+                    Circle()
+                        .fill(task.priority.color)
+                        .frame(width: 8, height: 8)
+                    
+                    Text(task.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                    
+                    Spacer()
+                    
+                    Menu {
+                        Button("Edit") { }
+                        Button("Move") { }
+                        Button("Delete", role: .destructive) { }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
                 }
-            }
-            
-            // Content
-            if !task.content.isEmpty {
-                Text(task.content)
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                    .lineLimit(3)
-            }
+                
+                // Content
+                if !task.content.isEmpty {
+                    Text(task.content)
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                        .lineLimit(3)
+                }
             
             // Tags
             if !task.tags.isEmpty {
@@ -231,6 +232,19 @@ struct KanbanTaskCard: View {
         .background(Color.secondary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        }
+    }
+    
+    private func createTaskFromMockTask(_ mockTask: MockTask) -> Task {
+        let task = Task(
+            title: mockTask.title,
+            content: mockTask.content,
+            priority: Priority(rawValue: mockTask.priority.rawValue) ?? .medium,
+            status: TaskStatus(rawValue: mockTask.status.rawValue) ?? .todo,
+            tags: mockTask.tags,
+            dueDate: mockTask.dueDate
+        )
+        return task
     }
 }
 

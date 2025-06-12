@@ -326,37 +326,16 @@ struct HomeView: View {
     
     // MARK: - Tasks Content
     private var tasksContent: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 16) {
-                // To Do Column
-                kanbanColumn(
-                    title: "To Do",
-                    tasks: mockTasks.filter { $0.status == "todo" },
-                    count: mockTasks.filter { $0.status == "todo" }.count
-                )
-                
-                // In Progress Column
-                kanbanColumn(
-                    title: "In Progress",
-                    tasks: mockTasks.filter { $0.status == "inProgress" },
-                    count: mockTasks.filter { $0.status == "inProgress" }.count
-                )
-                
-                // Done Column
-                kanbanColumn(
-                    title: "Done",
-                    tasks: mockTasks.filter { $0.status == "done" },
-                    count: mockTasks.filter { $0.status == "done" }.count
-                )
-            }
-            .padding(.horizontal, 16)
-        }
+        KanbanBoardView()
     }
     
     // MARK: - Issues Content
     private var issuesContent: some View {
         ForEach(filteredIssues, id: \.id) { issue in
-            issueCardView(issue: issue)
+            NavigationLink(destination: IssueDetailView(issue: createIssueFromSimple(issue))) {
+                issueCardView(issue: issue)
+            }
+            .buttonStyle(PlainButtonStyle())
         }
     }
     
@@ -766,4 +745,15 @@ extension HomeView {
         )
         return task
     }
+    
+    private func createIssueFromSimple(_ simpleNote: SimpleNote) -> Note {
+        let issue = Note(
+            title: simpleNote.title,
+            content: simpleNote.content,
+            tags: simpleNote.tags,
+            type: .issue
+        )
+        return issue
+    }
 }
+
