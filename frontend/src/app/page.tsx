@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -44,17 +46,24 @@ export default function Home() {
         </div>
 
         <div className="bg-white rounded-lg p-8 shadow-md">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Try the Demo</h2>
           <p className="text-gray-600 mb-6">
-            We&apos;re building the future of note-taking and task management. 
-            Stay tuned for updates on our development progress.
+            Experience the NoteFlow interface with our interactive demo featuring mock data.
           </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Next.js</span>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">TypeScript</span>
-            <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">Redux Toolkit</span>
-            <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">Tailwind CSS</span>
-            <span className="px-3 py-1 bg-pink-100 text-pink-800 rounded-full text-sm">GraphQL</span>
+          <div className="flex flex-col items-center gap-4">
+            <Link 
+              href="/dashboard"
+              className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-lg"
+            >
+              Launch Dashboard Demo
+            </Link>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Next.js</span>
+              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">TypeScript</span>
+              <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">Redux Toolkit</span>
+              <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">Tailwind CSS</span>
+              <span className="px-3 py-1 bg-pink-100 text-pink-800 rounded-full text-sm">GraphQL</span>
+            </div>
           </div>
         </div>
       </div>
