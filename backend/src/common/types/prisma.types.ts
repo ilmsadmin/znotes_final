@@ -18,62 +18,175 @@ export enum NoteStatus {
   archived = 'archived',
 }
 
+export enum Priority {
+  low = 'low',
+  medium = 'medium',
+  high = 'high',
+}
+
+export enum Severity {
+  low = 'low',
+  medium = 'medium',
+  critical = 'critical',
+}
+
+export enum InvitationStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  DECLINED = 'DECLINED',
+  EXPIRED = 'EXPIRED',
+}
+
+export enum PlanType {
+  FREE = 'FREE',
+  PREMIUM = 'PREMIUM',
+}
+
+export enum NotificationType {
+  COMMENT = 'COMMENT',
+  ASSIGN = 'ASSIGN',
+  DEADLINE = 'DEADLINE',
+  MENTION = 'MENTION',
+}
+
+export enum SyncAction {
+  create = 'create',
+  update = 'update',
+  delete = 'delete',
+}
+
+export enum SyncStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  domain: string;
-  groupId: string;
-  role: Role;
   avatarUrl?: string;
   firebaseUid: string;
   lastActive?: Date;
   createdAt: Date;
   updatedAt: Date;
-  group?: Group;
+  groupsCreated?: Group[];
+  groupMemberships?: GroupMember[];
+  groupLimits?: UserGroupLimits;
 }
 
 export interface Group {
   id: string;
   name: string;
-  domain: string;
+  description?: string;
+  avatarUrl?: string;
+  creatorId: string;
+  maxMembers: number;
   settings: any;
   createdAt: Date;
   updatedAt: Date;
-  users?: User[];
+  creator?: User;
+  members?: GroupMember[];
+  invitations?: GroupInvitation[];
   notes?: Note[];
+}
+
+export interface GroupMember {
+  id: string;
+  groupId: string;
+  userId: string;
+  role: Role;
+  joinedAt: Date;
+  group?: Group;
+  user?: User;
+}
+
+export interface GroupInvitation {
+  id: string;
+  groupId: string;
+  invitedBy: string;
+  email: string;
+  token: string;
+  status: InvitationStatus;
+  expiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  group?: Group;
+  inviter?: User;
+}
+
+export interface UserGroupLimits {
+  userId: string;
+  createdGroupsCount: number;
+  maxGroupsAllowed: number;
+  planType: PlanType;
+  updatedAt: Date;
+  user?: User;
 }
 
 export interface Note {
   id: string;
   groupId: string;
   creatorId: string;
+  parentId?: string;
   title: string;
   content?: string;
   type: NoteType;
   status: NoteStatus;
-  metadata: any;
+  priority?: Priority;
+  severity?: Severity;
+  deadline?: Date;
+  estimatedTime?: number;
+  tags: string[];
+  isPinned: boolean;
   version: number;
+  contentHash?: string;
+  lastModifiedBy?: string;
+  conflictData?: any;
+  metadata: any;
   createdAt: Date;
   updatedAt: Date;
   group?: Group;
   creator?: User;
+  parent?: Note;
+  children?: Note[];
+  lastModifier?: User;
+  assignments?: Assignment[];
   comments?: Comment[];
   files?: File[];
+  notifications?: Notification[];
   activityLogs?: ActivityLog[];
   syncLogs?: SyncLog[];
+}
+
+export interface Assignment {
+  id: string;
+  noteId: string;
+  assigneeId: string;
+  createdAt: Date;
+  note?: Note;
+  assignee?: User;
 }
 
 export interface Comment {
   id: string;
   noteId: string;
   authorId: string;
+  parentCommentId?: string;
   content: string;
+  mentions: string[];
+  version: number;
+  contentHash?: string;
+  lastModifiedBy?: string;
   metadata: any;
   createdAt: Date;
   updatedAt: Date;
   note?: Note;
   author?: User;
+  parentComment?: Comment;
+  replies?: Comment[];
+  lastModifier?: User;
 }
 
 export interface File {
@@ -87,6 +200,19 @@ export interface File {
   createdAt: Date;
   note?: Note;
   uploader?: User;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  noteId?: string;
+  message: string;
+  data: any;
+  read: boolean;
+  createdAt: Date;
+  user?: User;
+  note?: Note;
 }
 
 export interface ActivityLog {
@@ -112,4 +238,22 @@ export interface SyncLog {
   createdAt: Date;
   user?: User;
   note?: Note;
+}
+
+export interface SyncQueue {
+  id: string;
+  userId: string;
+  tableName: string;
+  recordId: string;
+  action: SyncAction;
+  data: any;
+  clientTimestamp: Date;
+  retryCount: number;
+  status: SyncStatus;
+  errorMessage?: string;
+  dependsOn?: string;
+  createdAt: Date;
+  user?: User;
+  dependency?: SyncQueue;
+  dependentItems?: SyncQueue[];
 }
