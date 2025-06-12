@@ -15,8 +15,13 @@ export class ActivityResolver {
   async groupActivity(
     @CurrentUser() user: AuthUser,
     @Args('limit', { type: () => Number, defaultValue: 50 }) limit: number,
+    @Args('groupId', { nullable: true }) groupId?: string,
   ): Promise<ActivityLog[]> {
-    return this.activityService.getGroupActivity(user.groupId, limit) as Promise<ActivityLog[]>;
+    const targetGroupId = groupId || user.primaryGroupId;
+    if (!targetGroupId) {
+      throw new Error('No group specified');
+    }
+    return this.activityService.getGroupActivity(targetGroupId, limit) as Promise<ActivityLog[]>;
   }
 
   @Query(() => [ActivityLog])
@@ -32,12 +37,14 @@ export class ActivityResolver {
     @CurrentUser() user: AuthUser,
     @Args('noteId') noteId: string,
   ): Promise<ActivityLog[]> {
-    // First verify the note belongs to the user's group
+    // First verify the note belongs to the user's groups
     const activities = await this.activityService.getNoteActivity(noteId);
     
-    // Filter to only show activities from the user's group
+    // Filter to only show activities from the user's groups
     return activities.filter(activity => 
-      activity.user && activity.user.groupId === user.groupId
+      activity.user && user.groupIds.some(groupId => 
+        activity.user.groupMemberships?.some(gm => gm.groupId === groupId)
+      )
     ) as ActivityLog[];
   }
 }

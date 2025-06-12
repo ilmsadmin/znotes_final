@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCommentInput } from '../common/dto/input.dto';
+import { CreateCommentInput, UpdateCommentInput } from '../common/dto/input.dto';
 import { Comment } from '../common/types/prisma.types';
 
 @Injectable()
 export class CommentsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(userId: string, groupId: string, createCommentInput: CreateCommentInput): Promise<Comment> {
-    // Verify that the note exists and belongs to the user's group
+  async create(userId: string, groupIds: string[], createCommentInput: CreateCommentInput): Promise<Comment> {
+    // Verify that the note exists and belongs to one of the user's groups
     const note = await this.prisma.note.findUnique({
       where: { id: createCommentInput.noteId }
     });
@@ -17,54 +17,76 @@ export class CommentsService {
       throw new NotFoundException('Note not found');
     }
 
-    if (note.groupId !== groupId) {
+    if (!groupIds.includes(note.groupId)) {
       throw new ForbiddenException('Access denied');
     }
 
+    const commentData: any = {
+      content: createCommentInput.content,
+      noteId: createCommentInput.noteId,
+      authorId: userId,
+      parentCommentId: createCommentInput.parentCommentId,
+      mentions: createCommentInput.mentions || [],
+      lastModifiedBy: userId,
+    };
+
+    // Generate content hash for sync
+    commentData.contentHash = this.generateContentHash(createCommentInput.content);
+
     return this.prisma.comment.create({
-      data: {
-        content: createCommentInput.content,
-        noteId: createCommentInput.noteId,
-        authorId: userId,
-      },
+      data: commentData,
       include: {
-        author: {
-          include: { group: true }
-        },
+        author: true,
         note: {
           include: {
-            creator: {
-              include: { group: true }
-            }
+            creator: true,
           }
-        }
+        },
+        parentComment: true,
+        replies: {
+          include: {
+            author: true,
+          },
+        },
       },
     });
   }
 
-  async findByNoteId(noteId: string, groupId: string): Promise<Comment[]> {
-    // Verify note belongs to group
+  async findByNoteId(noteId: string, groupIds: string[]): Promise<Comment[]> {
+    // Verify note belongs to one of user's groups
     const note = await this.prisma.note.findUnique({
       where: { id: noteId }
     });
 
-    if (!note || note.groupId !== groupId) {
+    if (!note || !groupIds.includes(note.groupId)) {
       throw new ForbiddenException('Access denied');
     }
 
     return this.prisma.comment.findMany({
-      where: { noteId },
+      where: { 
+        noteId,
+        parentCommentId: null, // Only top-level comments
+      },
       include: {
-        author: {
-          include: { group: true }
-        },
+        author: true,
         note: {
           include: {
-            creator: {
-              include: { group: true }
-            }
+            creator: true,
           }
-        }
+        },
+        replies: {
+          include: {
+            author: true,
+            replies: {
+              include: {
+                author: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
       orderBy: {
         createdAt: 'asc',
@@ -72,7 +94,7 @@ export class CommentsService {
     });
   }
 
-  async update(id: string, userId: string, groupId: string, content: string): Promise<Comment> {
+  async update(id: string, userId: string, groupIds: string[], updateCommentInput: UpdateCommentInput): Promise<Comment> {
     const comment = await this.prisma.comment.findUnique({
       where: { id },
       include: {
@@ -84,7 +106,7 @@ export class CommentsService {
       throw new NotFoundException('Comment not found');
     }
 
-    if (comment.note.groupId !== groupId) {
+    if (!groupIds.includes(comment.note.groupId)) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -92,25 +114,37 @@ export class CommentsService {
       throw new ForbiddenException('Only the author can edit this comment');
     }
 
+    const updateData: any = {
+      content: updateCommentInput.content,
+      mentions: updateCommentInput.mentions || comment.mentions,
+      lastModifiedBy: userId,
+      version: { increment: 1 },
+    };
+
+    // Generate content hash for sync
+    updateData.contentHash = this.generateContentHash(updateCommentInput.content);
+
     return this.prisma.comment.update({
       where: { id },
-      data: { content },
+      data: updateData,
       include: {
-        author: {
-          include: { group: true }
-        },
+        author: true,
         note: {
           include: {
-            creator: {
-              include: { group: true }
-            }
+            creator: true,
           }
-        }
+        },
+        parentComment: true,
+        replies: {
+          include: {
+            author: true,
+          },
+        },
       },
     });
   }
 
-  async remove(id: string, userId: string, groupId: string): Promise<boolean> {
+  async remove(id: string, userId: string, groupIds: string[]): Promise<boolean> {
     const comment = await this.prisma.comment.findUnique({
       where: { id },
       include: {
@@ -122,7 +156,7 @@ export class CommentsService {
       throw new NotFoundException('Comment not found');
     }
 
-    if (comment.note.groupId !== groupId) {
+    if (!groupIds.includes(comment.note.groupId)) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -135,5 +169,16 @@ export class CommentsService {
     });
 
     return true;
+  }
+
+  private generateContentHash(content: string): string {
+    // Simple hash function - in production you'd use crypto.createHash
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(16);
   }
 }

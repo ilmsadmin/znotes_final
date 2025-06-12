@@ -195,7 +195,7 @@ export interface File {
   fileUrl: string;
   fileName: string;
   fileType: string;
-  fileSize: bigint;
+  fileSize: string; // Changed from bigint to string for GraphQL compatibility
   uploadedBy: string;
   createdAt: Date;
   note?: Note;

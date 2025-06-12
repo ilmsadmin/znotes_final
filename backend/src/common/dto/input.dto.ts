@@ -251,4 +251,7 @@ export class NotesFilterInput {
   @IsOptional()
   @IsNumber()
   offset?: number;
+
+  // Internal field, not exposed in GraphQL
+  userId?: string;
 }
