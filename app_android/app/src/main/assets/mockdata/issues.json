@@ -1,0 +1,41 @@
+[
+  {
+    "id": "issue-1",
+    "title": "Login button not responding",
+    "description": "Users report that the login button becomes unresponsive after multiple attempts",
+    "type": "bug",
+    "severity": "high",
+    "status": "open",
+    "assignee": "John Doe",
+    "reporter": "Support Team",
+    "tags": ["ui", "authentication", "critical"],
+    "createdAt": "2024-01-15T14:00:00Z",
+    "updatedAt": "2024-01-15T14:00:00Z"
+  },
+  {
+    "id": "issue-2",
+    "title": "Add dark mode support",
+    "description": "Implement dark mode theme throughout the application",
+    "type": "feature",
+    "severity": "medium",
+    "status": "in-progress",
+    "assignee": "Jane Smith",
+    "reporter": "Product Team",
+    "tags": ["ui", "theme", "enhancement"],
+    "createdAt": "2024-01-14T10:00:00Z",
+    "updatedAt": "2024-01-14T10:00:00Z"
+  },
+  {
+    "id": "issue-3",
+    "title": "Data sync issues",
+    "description": "Users reporting that changes made on mobile aren't syncing to web version",
+    "type": "bug",
+    "severity": "critical",
+    "status": "open",
+    "assignee": null,
+    "reporter": "Customer Support",
+    "tags": ["sync", "data", "critical"],
+    "createdAt": "2024-01-13T16:30:00Z",
+    "updatedAt": "2024-01-13T16:30:00Z"
+  }
+]

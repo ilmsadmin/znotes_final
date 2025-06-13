@@ -1,0 +1,50 @@
+[
+  {
+    "id": "user-1",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "member",
+    "avatarUrl": null,
+    "group": {
+      "id": "group-1",
+      "name": "Example Team",
+      "domain": "example.com"
+    }
+  },
+  {
+    "id": "user-2",
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "role": "admin",
+    "avatarUrl": null,
+    "group": {
+      "id": "group-1",
+      "name": "Example Team",
+      "domain": "example.com"
+    }
+  },
+  {
+    "id": "user-3",
+    "name": "Mike Wilson",
+    "email": "mike@example.com",
+    "role": "member",
+    "avatarUrl": null,
+    "group": {
+      "id": "group-1",
+      "name": "Example Team",
+      "domain": "example.com"
+    }
+  },
+  {
+    "id": "user-4",
+    "name": "Sarah Johnson",
+    "email": "sarah@example.com",
+    "role": "member",
+    "avatarUrl": null,
+    "group": {
+      "id": "group-1",
+      "name": "Example Team",
+      "domain": "example.com"
+    }
+  }
+]

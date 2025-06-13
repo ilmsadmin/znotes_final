@@ -1,0 +1,50 @@
+[
+  {
+    "id": "note-1",
+    "title": "Team Meeting Notes",
+    "content": "1. Review last sprint outcomes\n2. Discuss Q4 roadmap priorities\n3. Resource allocation for new features\n4. Timeline review and adjustments\n\nKey topics to cover:\n- Mobile app development progress\n- API authentication implementation\n- Design system finalization\n- User testing feedback integration",
+    "type": "note",
+    "status": "active",
+    "tags": ["meeting", "team", "roadmap"],
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-01-15T10:00:00Z",
+    "isPinned": true,
+    "creator": {
+      "id": "user-1",
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  },
+  {
+    "id": "note-2",
+    "title": "Project Ideas",
+    "content": "Some interesting project concepts to explore:\n• AI-powered note organization\n• Real-time collaboration features\n• Voice-to-text integration\n• Smart tag suggestions",
+    "type": "note",
+    "status": "active",
+    "tags": ["ideas", "brainstorm"],
+    "createdAt": "2024-01-14T15:30:00Z",
+    "updatedAt": "2024-01-14T15:30:00Z",
+    "isPinned": false,
+    "creator": {
+      "id": "user-1",
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  },
+  {
+    "id": "note-3",
+    "title": "Research Notes",
+    "content": "Key findings from user interviews:\n- Users want better search functionality\n- Mobile experience needs improvement\n- Integration with external tools is important",
+    "type": "note",
+    "status": "active",
+    "tags": ["research", "user-feedback"],
+    "createdAt": "2024-01-13T09:15:00Z",
+    "updatedAt": "2024-01-13T09:15:00Z",
+    "isPinned": false,
+    "creator": {
+      "id": "user-2",
+      "name": "Jane Smith",
+      "email": "jane@example.com"
+    }
+  }
+]
