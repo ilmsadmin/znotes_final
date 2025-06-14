@@ -1,0 +1,50 @@
+[
+  {
+    "id": "task-1",
+    "title": "Complete UI mockups",
+    "content": "Finalize the user interface designs for the mobile application",
+    "priority": "high",
+    "status": "in_progress",
+    "tags": ["design", "ui"],
+    "dueDate": "2024-01-17T00:00:00Z",
+    "assignee": "John Doe",
+    "createdAt": "2024-01-15T08:00:00Z",
+    "updatedAt": "2024-01-15T08:00:00Z"
+  },
+  {
+    "id": "task-2",
+    "title": "Setup CI/CD pipeline",
+    "content": "Configure automated testing and deployment",
+    "priority": "medium",
+    "status": "in_progress",
+    "tags": ["devops", "automation"],
+    "dueDate": null,
+    "assignee": "Jane Smith",
+    "createdAt": "2024-01-14T12:00:00Z",
+    "updatedAt": "2024-01-14T12:00:00Z"
+  },
+  {
+    "id": "task-3",
+    "title": "Database schema review",
+    "content": "Review and optimize the current database structure",
+    "priority": "low",
+    "status": "done",
+    "tags": ["database", "optimization"],
+    "dueDate": null,
+    "assignee": "Mike Wilson",
+    "createdAt": "2024-01-12T14:30:00Z",
+    "updatedAt": "2024-01-14T16:00:00Z"
+  },
+  {
+    "id": "task-4",
+    "title": "User testing session",
+    "content": "Conduct usability testing with 10 participants",
+    "priority": "high",
+    "status": "todo",
+    "tags": ["testing", "ux"],
+    "dueDate": "2024-01-20T00:00:00Z",
+    "assignee": "Sarah Johnson",
+    "createdAt": "2024-01-13T11:00:00Z",
+    "updatedAt": "2024-01-13T11:00:00Z"
+  }
+]
