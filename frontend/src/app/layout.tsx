@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ApolloProvider } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "NoteFlow",
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased">
-        {children}
+        <ApolloProvider>
+          {children}
+        </ApolloProvider>
       </body>
     </html>
   );

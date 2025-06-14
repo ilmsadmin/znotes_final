@@ -51,12 +51,20 @@ export default function Home() {
             Experience the NoteFlow interface with our interactive demo featuring mock data.
           </p>
           <div className="flex flex-col items-center gap-4">
-            <Link 
-              href="/dashboard"
-              className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-lg"
-            >
-              Launch Dashboard Demo
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link 
+                href="/dashboard"
+                className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-lg"
+              >
+                Launch Dashboard Demo
+              </Link>
+              <Link 
+                href="/login"
+                className="px-8 py-3 border border-blue-500 text-blue-500 rounded-lg hover:bg-blue-50 transition-colors font-medium text-lg"
+              >
+                Sign In
+              </Link>
+            </div>
             <div className="flex flex-wrap gap-2 justify-center">
               <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Next.js</span>
               <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">TypeScript</span>

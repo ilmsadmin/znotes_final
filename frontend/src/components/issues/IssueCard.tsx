@@ -16,6 +16,8 @@ interface Issue {
 interface IssueCardProps {
   issue: Issue;
   viewMode: 'grid' | 'list' | 'kanban';
+  onIssueClick?: (issueId: string) => void;
+  onEditClick?: (issueId: string) => void;
 }
 
 const typeColors = {
@@ -56,12 +58,15 @@ const severityIcons = {
   critical: '🔴',
 };
 
-export default function IssueCard({ issue, viewMode }: IssueCardProps) {
+export default function IssueCard({ issue, viewMode, onIssueClick, onEditClick }: IssueCardProps) {
   const baseClasses = "bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer";
   
   if (viewMode === 'list') {
     return (
-      <div className={`${baseClasses} flex items-start gap-4`}>
+      <div 
+        className={`${baseClasses} flex items-start gap-4`}
+        onClick={() => onIssueClick?.(issue.id)}
+      >
         <div className="flex-1">
           <div className="flex items-start justify-between mb-2">
             <div>
@@ -81,7 +86,17 @@ export default function IssueCard({ issue, viewMode }: IssueCardProps) {
                 </span>
               </div>
             </div>
-            <button className="text-gray-400 hover:text-gray-600 px-2 py-1">⋯</button>
+            <button 
+              className="text-gray-400 hover:text-gray-600 px-2 py-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditClick?.(issue.id);
+              }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
           </div>
           <p className="text-gray-700 text-sm mb-3 line-clamp-2">{issue.description}</p>
           <div className="flex items-center justify-between">
@@ -103,7 +118,10 @@ export default function IssueCard({ issue, viewMode }: IssueCardProps) {
 
   // Grid and Kanban view (similar layout, different container sizing)
   return (
-    <div className={baseClasses}>
+    <div 
+      className={baseClasses}
+      onClick={() => onIssueClick?.(issue.id)}
+    >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">{typeIcons[issue.type]}</span>
@@ -111,7 +129,17 @@ export default function IssueCard({ issue, viewMode }: IssueCardProps) {
             {statusLabels[issue.status]}
           </span>
         </div>
-        <button className="text-gray-400 hover:text-gray-600 px-1">⋯</button>
+        <button 
+          className="text-gray-400 hover:text-gray-600 px-1"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditClick?.(issue.id);
+          }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
       </div>
       
       <h3 className="font-semibold text-gray-900 mb-2">{issue.title}</h3>

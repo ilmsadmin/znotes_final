@@ -1,5 +1,10 @@
-import Dashboard from '@/components/layout/Dashboard';
+import WebLayout from '@/components/layout/WebLayout';
+import WebDashboard from '@/components/dashboard/WebDashboard';
 
 export default function DashboardPage() {
-  return <Dashboard />;
+  return (
+    <WebLayout>
+      <WebDashboard />
+    </WebLayout>
+  );
 }

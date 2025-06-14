@@ -38,6 +38,9 @@
     "docker:prod:build": "docker-compose -f docker-compose.prod.yml build",
     "docker:clean": "docker system prune -f && docker volume prune -f"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@apollo/server": "^4.12.2",
     "@nestjs/apollo": "^13.1.0",

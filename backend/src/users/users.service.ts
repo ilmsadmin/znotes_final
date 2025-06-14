@@ -13,7 +13,11 @@ export class UsersService {
       include: {
         groupMemberships: {
           include: {
-            group: true,
+            group: {
+              include: {
+                creator: true,
+              },
+            },
           },
         },
         groupLimits: true,
@@ -27,7 +31,11 @@ export class UsersService {
       include: {
         groupMemberships: {
           include: {
-            group: true,
+            group: {
+              include: {
+                creator: true,
+              },
+            },
           },
         },
         groupLimits: true,
@@ -41,7 +49,11 @@ export class UsersService {
       include: {
         groupMemberships: {
           include: {
-            group: true,
+            group: {
+              include: {
+                creator: true,
+              },
+            },
           },
         },
         groupLimits: true,
@@ -61,7 +73,11 @@ export class UsersService {
       include: {
         groupMemberships: {
           include: {
-            group: true,
+            group: {
+              include: {
+                creator: true,
+              },
+            },
           },
         },
         groupLimits: true,
@@ -77,7 +93,11 @@ export class UsersService {
           include: {
             groupMemberships: {
               include: {
-                group: true,
+                group: {
+                  include: {
+                    creator: true,
+                  },
+                },
               },
             },
             groupLimits: true,

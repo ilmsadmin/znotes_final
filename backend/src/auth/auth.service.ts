@@ -32,9 +32,9 @@ export class AuthService {
         return null;
       }
 
-      // Find or create user
+      // Find user by email (must exist in database)
       let user = await this.prisma.user.findUnique({
-        where: { firebaseUid },
+        where: { email },
         include: { 
           groupMemberships: {
             include: { group: true }
@@ -43,8 +43,22 @@ export class AuthService {
       });
 
       if (!user) {
-        // Auto-create user and group based on email domain
-        user = await this.createUserWithGroup(firebaseUid, email);
+        // User doesn't exist in database - reject login
+        console.log(`Login rejected: User ${email} not found in database`);
+        return null;
+      }
+
+      // Update firebaseUid if it's different (for existing users)
+      if (user.firebaseUid !== firebaseUid) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { firebaseUid },
+          include: { 
+            groupMemberships: {
+              include: { group: true }
+            }
+          }
+        });
       }
 
       const groupIds = user.groupMemberships.map(gm => gm.groupId);
@@ -72,19 +86,7 @@ export class AuthService {
       where: { name: { contains: domain } }
     });
 
-    if (!group) {
-      // Create new group for this domain
-      group = await this.prisma.group.create({
-        data: {
-          name: `${domain} Group`,
-          description: `Auto-created group for ${domain}`,
-          creatorId: '', // We'll update this after creating the user
-          settings: {}
-        }
-      });
-    }
-
-    // Create user
+    // Create user first
     const user = await this.prisma.user.create({
       data: {
         name,
@@ -93,11 +95,15 @@ export class AuthService {
       }
     });
 
-    // If this is a new group, update it to set the user as creator
-    if (group.creatorId === '') {
-      await this.prisma.group.update({
-        where: { id: group.id },
-        data: { creatorId: user.id }
+    if (!group) {
+      // Create new group for this domain with the user as creator
+      group = await this.prisma.group.create({
+        data: {
+          name: `${domain} Group`,
+          description: `Auto-created group for ${domain}`,
+          creatorId: user.id,
+          settings: {}
+        }
       });
     }
 
@@ -124,7 +130,13 @@ export class AuthService {
       where: { id: user.id },
       include: {
         groupMemberships: {
-          include: { group: true }
+          include: { 
+            group: {
+              include: {
+                creator: true,
+              },
+            },
+          }
         }
       }
     });
@@ -135,7 +147,13 @@ export class AuthService {
       where: { id: userId },
       include: { 
         groupMemberships: {
-          include: { group: true }
+          include: { 
+            group: {
+              include: {
+                creator: true,
+              },
+            },
+          }
         },
         groupLimits: true,
       }
@@ -145,7 +163,13 @@ export class AuthService {
   async getUserPrimaryGroup(userId: string) {
     const membership = await this.prisma.groupMember.findFirst({
       where: { userId },
-      include: { group: true },
+      include: { 
+        group: {
+          include: {
+            creator: true,
+          },
+        },
+      },
       orderBy: { joinedAt: 'asc' }, // First joined group is primary
     });
 
